@@ -35,6 +35,10 @@ pnpm run gen:package
 
 ## 📦 Packages
 
+### [coding-agent-sandbox](./packages/coding-agent-sandbox/README.md)
+
+Run AI coding agents (Claude Code, OpenAI Codex, GitHub Copilot CLI) inside Docker against a dedicated Git worktree.
+
 
 ## 🚢 Releases
 

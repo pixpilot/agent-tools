@@ -61,6 +61,6 @@ function listCandidates(): string[] {
     .filter(
       (name) =>
         name === HOME_CACHE_VOLUME ||
-          /^coding-agent-sandbox-deps-[a-f0-9]{10}-[a-f0-9]{6}$/u.test(name),
+        /^coding-agent-sandbox-deps-[a-f0-9]{10}-[a-f0-9]{6}$/u.test(name),
     );
 }

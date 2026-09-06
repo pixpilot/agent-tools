@@ -23,10 +23,7 @@ export function createProgram(version: string): Command {
       '--skills-dir <path>',
       `Centralized skills directory (default: ${DEFAULT_SKILLS_DIR})`,
     )
-    .option(
-      '--skills-repo <url>',
-      'Repository to clone when setting up skills',
-    )
+    .option('--skills-repo <url>', 'Repository to clone when setting up skills')
     .option('--branch <name>', 'Override the ai/<agent>/<task> branch name')
     .option('--worktree <path>', 'Override the worktree location')
     .option('--base <ref>', 'Base ref for a newly created branch')

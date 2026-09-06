@@ -60,6 +60,9 @@ const after = readme.substring(endIndex);
 
 const newReadme = `${before}\n\n${markdown}${after}`;
 
-fs.writeFileSync(readmePath, newReadme);
-
-console.log('README.md updated with packages.');
+if (newReadme !== readme) {
+  fs.writeFileSync(readmePath, newReadme);
+  console.log('README.md updated with packages.');
+} else {
+  console.log('README.md package section is already up to date.');
+}
