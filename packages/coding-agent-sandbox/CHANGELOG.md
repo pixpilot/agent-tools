@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.0.2
+
+### Patch Changes
+
+- 513d93a: new release
+
 ## 1.0.1
 
 ### Patch Changes
