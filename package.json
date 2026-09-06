@@ -1,13 +1,23 @@
 {
-  "name": "pnpm-turbo-monorepo-template",
+  "name": "agent-tools",
   "private": true,
   "packageManager": "pnpm@10.33.4",
+  "prettier": "@internal/prettier-config",
+  "author": "Mo Doaie <m.doaie@hotmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/pixpilot/agent-tools",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pixpilot/agent-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pixpilot/agent-tools/issues"
+  },
   "engines": {
     "node": ">=24.15.0",
     "pnpm": ">=9.6.0"
   },
   "scripts": {
-    "setup": "npx @pixpilot/scaffoldfy@latest --config https://unpkg.com/@pixpilot/scaffoldfy-configs@latest/workspace-initializer/scaffoldfy.json",
     "prepare": "husky",
     "preinstall": "npx only-allow pnpm",
     "build": "turbo run build",
@@ -30,7 +40,8 @@
     "deps:update": "npx taze -r -w && pnpm install",
     "deps:update:major": "npx taze major -r -w && pnpm install",
     "gen:package": "npx @pixpilot/scaffoldfy@latest --config ./generators/package/scaffoldfy.json",
-    "changeset": "changeset"
+    "changeset": "changeset",
+    "generate-packages-section": "node scripts/generate-packages-section.js"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
@@ -53,6 +64,5 @@
     "turbo": "^2.9.12",
     "typescript": "catalog:dev",
     "vitest": "catalog:dev"
-  },
-  "prettier": "@internal/prettier-config"
+  }
 }

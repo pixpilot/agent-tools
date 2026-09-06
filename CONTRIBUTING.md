@@ -1,4 +1,4 @@
-# Contributing to <projectName>
+# Contributing to Agent Tools
 
 Thank you for your interest in contributing! 🎉
 

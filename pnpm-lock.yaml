@@ -7,8 +7,8 @@ settings:
 catalogs:
   dev:
     '@pixpilot/dev-config':
-      specifier: ^3.20.0
-      version: 3.20.0
+      specifier: ^3.22.0
+      version: 3.22.0
     '@vitest/coverage-v8':
       specifier: ^4.1.5
       version: 4.1.5
@@ -55,7 +55,7 @@ importers:
         version: link:tooling/prettier
       '@pixpilot/dev-config':
         specifier: catalog:dev
-        version: 3.20.0
+        version: 3.22.0
       '@pixpilot/workspace-package-generator':
         specifier: ^2.1.2
         version: 2.1.2
@@ -102,33 +102,6 @@ importers:
         specifier: catalog:dev
         version: 4.1.5(@types/node@25.6.2)(@vitest/coverage-v8@4.1.5)(@vitest/ui@4.1.5)(vite@7.0.5(@types/node@25.6.2)(jiti@2.6.1)(terser@5.43.1)(tsx@4.21.0)(yaml@2.8.4))
 
-  packages/example-package:
-    devDependencies:
-      '@internal/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@internal/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@internal/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@internal/tsdown-config':
-        specifier: workspace:*
-        version: link:../../tooling/tsdown
-      '@internal/vitest-config':
-        specifier: workspace:*
-        version: link:../../tooling/vitest
-      '@pixpilot/dev-config':
-        specifier: catalog:dev
-        version: 3.20.0
-      '@types/node':
-        specifier: ^25.6.2
-        version: 25.6.2
-      tsdown:
-        specifier: catalog:dev
-        version: 0.22.0(tsx@4.21.0)(typescript@5.9.3)(unrun@0.3.0(synckit@0.11.11))
-
   tooling/eslint:
     dependencies:
       '@pixpilot/eslint-config':
@@ -146,7 +119,7 @@ importers:
         version: link:../typescript
       '@pixpilot/dev-config':
         specifier: catalog:dev
-        version: 3.20.0
+        version: 3.22.0
       eslint:
         specifier: catalog:dev
         version: 9.39.4(jiti@2.6.1)
@@ -164,7 +137,7 @@ importers:
         version: link:../typescript
       '@pixpilot/dev-config':
         specifier: catalog:dev
-        version: 3.20.0
+        version: 3.22.0
 
   tooling/tsdown:
     dependencies:
@@ -183,7 +156,7 @@ importers:
         version: link:../typescript
       '@pixpilot/dev-config':
         specifier: catalog:dev
-        version: 3.20.0
+        version: 3.22.0
       '@types/node':
         specifier: ^25.6.2
         version: 25.6.2
@@ -198,7 +171,7 @@ importers:
     devDependencies:
       '@pixpilot/dev-config':
         specifier: catalog:dev
-        version: 3.20.0
+        version: 3.22.0
       '@types/node':
         specifier: ^25.6.2
         version: 25.6.2
@@ -1134,8 +1107,8 @@ packages:
       vue-eslint-parser:
         optional: true
 
-  '@pixpilot/dev-config@3.20.0':
-    resolution: {integrity: sha512-JkYZFTCkU9lgB2d0BxeE+aNK/D3J19JsRWdfA9/O0lclNRwxhiTI9fviyDWrLfWvCGBSxoF19LV2CqouR7oGWg==}
+  '@pixpilot/dev-config@3.22.0':
+    resolution: {integrity: sha512-n8tx8Oz14I8Y3ugvngh8dTxqwVOsU0H0S5ygL1kd/fUf3UzVrIsmLgOfvVptYsCi4/2M7lxLXYw5B5qAAl3Y6Q==}
 
   '@pixpilot/eslint-config@2.10.0':
     resolution: {integrity: sha512-YXGWBAGbaByJQ7n1fV+B58lrNJ8Z2lnw3lXU8oX8/Sdcq2SD2BiFsF/R3VOXUS2YRUJOfbgJxB8YBtNwvCHz7g==}
@@ -4835,7 +4808,7 @@ snapshots:
       - typescript
       - vitest
 
-  '@pixpilot/dev-config@3.20.0': {}
+  '@pixpilot/dev-config@3.22.0': {}
 
   '@pixpilot/eslint-config@2.10.0(@next/eslint-plugin-next@15.4.3)(@typescript-eslint/rule-tester@8.59.2(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.59.2(typescript@5.9.3))(@typescript-eslint/utils@8.59.2(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint-plugin-jsx-a11y@6.10.2(eslint@9.39.4(jiti@2.6.1)))(eslint-plugin-react-hooks@5.2.0(eslint@9.39.4(jiti@2.6.1)))(eslint-plugin-react-refresh@0.4.20(eslint@9.39.4(jiti@2.6.1)))(eslint-plugin-turbo@2.5.6(eslint@9.39.4(jiti@2.6.1))(turbo@2.9.12))(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)(vitest@4.1.5)':
     dependencies:

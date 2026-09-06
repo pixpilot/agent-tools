@@ -1,3 +1,4 @@
+pnpm run generate-packages-section
 #!/usr/bin/env sh
 
 if [ -n "$CI" ]; then
