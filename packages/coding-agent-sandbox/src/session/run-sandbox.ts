@@ -5,6 +5,7 @@ import { getAgent } from '../agents/agent-registry';
 import { ensureDocker } from '../docker/ensure-docker';
 import { ensureImage } from '../docker/ensure-image';
 import { ensureSessionVolumes } from '../docker/ensure-session-volumes';
+import { pruneVolumes } from '../docker/prune-volumes';
 import { runContainer } from '../docker/run-container';
 import { detectEnvironment } from '../environments/detect-environment';
 import { ensureWorktree } from '../git/ensure-worktree';
@@ -123,8 +124,25 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
 
   success(`Starting ${agent.label} in ${sessionPlan.containerName}`);
   ensureSessionVolumes(sessionPlan.volumes);
-  const exitCode = await runContainer(sessionPlan);
+  let exitCode = 1;
+  try {
+    exitCode = await runContainer(sessionPlan);
+  } finally {
+    await pruneStaleVolumes();
+  }
   printSessionSummary(worktree, exitCode);
 
   return exitCode;
+}
+
+async function pruneStaleVolumes(): Promise<void> {
+  try {
+    await pruneVolumes({ quiet: true, yes: true });
+  } catch (cause) {
+    warn(
+      `Could not remove stale dependency volumes: ${
+        cause instanceof Error ? cause.message : String(cause)
+      }`,
+    );
+  }
 }

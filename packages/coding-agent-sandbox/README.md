@@ -150,7 +150,9 @@ The CLI does not forward host API keys. Dry-run output omits all environment val
 
 `csbx` is an alias for `coding-agent-sandbox`. Run `csbx prune --dry-run` to preview, then `csbx prune` to confirm deletion (`--yes` confirms non-interactively).
 
-Pruning only removes newly labeled dependency volumes and the shared home cache when no container references them. It preserves auth volumes, installed CLI storage, the shared package download cache, and volumes attached to running **or stopped** containers. Delete `coding-agent-sandbox-package-cache` explicitly with Docker if you need to reset downloaded packages or Corepack binaries. Older unlabeled volumes are deliberately left untouched. Deletion is permanent; dependencies and cache data must be rebuilt afterwards. "Unused" means no container reference, even if you intend to reuse that worktree later. [Docker's dangling-volume filter](https://docs.docker.com/reference/cli/docker/volume/ls/#dangling) defines this check.
+After every session, the CLI removes all unused labeled dependency volumes, including the worktree that just finished. The shared package download cache is retained, so a new or reopened worktree can still install without downloading packages again.
+
+`csbx prune` removes all newly labeled unused dependency volumes and the shared home cache when no container references them. It preserves auth volumes, installed CLI storage, the shared package download cache, and volumes attached to running **or stopped** containers. Delete `coding-agent-sandbox-package-cache` explicitly with Docker if you need to reset downloaded packages or Corepack binaries. Older unlabeled volumes are deliberately left untouched. Deletion is permanent; dependencies and cache data must be rebuilt afterwards. "Unused" means no container reference, even if you intend to reuse that worktree later. [Docker's dangling-volume filter](https://docs.docker.com/reference/cli/docker/volume/ls/#dangling) defines this check.
 
 ## Docker image
 

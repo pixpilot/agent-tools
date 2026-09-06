@@ -5,14 +5,20 @@ import { plain } from '../utils/logger';
 import { runOrThrow } from '../utils/run-command';
 import { ensureDocker } from './ensure-docker';
 
+interface PruneVolumeOptions {
+  dryRun?: boolean;
+  quiet?: boolean;
+  yes?: boolean;
+}
+
 /** Removes only labeled, unused dependency/cache volumes after explicit confirmation. */
-export async function pruneVolumes(
-  options: { dryRun?: boolean; yes?: boolean } = {},
-): Promise<void> {
+export async function pruneVolumes(options: PruneVolumeOptions = {}): Promise<void> {
   ensureDocker();
   const candidates = listCandidates();
   if (candidates.length === 0) {
-    plain('No unused labeled sandbox dependency/cache volumes found.');
+    if (!options.quiet) {
+      plain('No unused labeled sandbox dependency/cache volumes found.');
+    }
     return;
   }
   plain(`Volumes to permanently remove:\n${candidates.join('\n')}`);
