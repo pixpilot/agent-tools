@@ -17,6 +17,7 @@ import { buildContainerName } from './build-container-name';
 import { buildSessionEnv } from './build-session-env';
 import { buildSessionVolumes } from './build-session-volumes';
 import { ensureNoActiveContainer } from './ensure-no-active-container';
+import { ensureWorktreeSourceIsClean } from './ensure-worktree-source-is-clean';
 import { printSessionPlan } from './print-session-plan';
 import { printSessionSummary } from './print-session-summary';
 
@@ -68,9 +69,14 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     ensureNoActiveContainer(plan.path);
   }
 
+  const preview = previewWorktree(repository, plan);
+  if (!options.dryRun && preview.created) {
+    await ensureWorktreeSourceIsClean(repository.root, { nonInteractive: options.yes });
+  }
+
   step(`Preparing worktree for ${agent.label}`);
   const worktree = options.dryRun
-    ? previewWorktree(repository, plan)
+    ? preview
     : ensureWorktree(repository, plan, { base: options.base });
   detail(`${worktree.path} on ${worktree.branch}`);
 

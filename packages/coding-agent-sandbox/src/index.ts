@@ -27,7 +27,7 @@ export {
   NodeEnvironment,
 } from './environments/index';
 export { ensureWorktree, resolveRepository, resolveWorktreePlan } from './git/index';
-export { runSandbox } from './session/index';
+export { ensureWorktreeSourceIsClean, runSandbox } from './session/index';
 export {
   cloneSkillsRepository,
   partitionSeedFiles,

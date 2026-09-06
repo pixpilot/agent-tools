@@ -41,6 +41,7 @@
     "deps:update:major": "npx taze major -r -w && pnpm install",
     "gen:package": "npx @pixpilot/scaffoldfy@latest --config ./generators/package/scaffoldfy.json",
     "changeset": "changeset",
+    "changeset:publish": "changeset publish",
     "generate-packages-section": "node scripts/generate-packages-section.js"
   },
   "devDependencies": {
