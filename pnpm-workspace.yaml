@@ -1,0 +1,20 @@
+packages:
+  - 'packages/**'
+  - 'tooling/**'
+
+catalogs:
+  dev:
+    '@pixpilot/dev-config': ^3.20.0
+    '@types/node': ^25.6.2
+    '@vitest/coverage-v8': ^4.1.5
+    '@vitest/ui': ^4.1.5
+    eslint: ^9.39.4
+    glob: ^13.0.6
+    prettier: ^3.8.3
+    tsdown: ^0.22.0
+    typescript: ^5.9.3
+    vitest: ^4.1.5
+    unrun: ^0.3.0
+
+overrides:
+    '@types/node': catalog:dev
