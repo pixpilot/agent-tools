@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.0.4
+
+### Patch Changes
+
+- e0b1970: adds npm provenance
+
 ## 1.0.3
 
 ### Patch Changes
