@@ -1,7 +1,7 @@
 {
   "name": "@pixpilot/coding-agent-sandbox",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "packageManager": "pnpm@10.17.0",
   "description": "Run AI coding agents (Claude Code, OpenAI Codex, GitHub Copilot CLI) inside Docker against a dedicated Git worktree.",
   "author": "Mo Doaie <m.doaie@hotmail.com>",
