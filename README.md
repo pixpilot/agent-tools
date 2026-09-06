@@ -35,7 +35,6 @@ pnpm run gen:package
 
 ## 📦 Packages
 
-<!-- List your packages here -->
 
 ## 🚢 Releases
 

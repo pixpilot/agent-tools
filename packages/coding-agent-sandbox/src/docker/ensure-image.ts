@@ -1,0 +1,68 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { IMAGE_REPOSITORY } from '../constants';
+import { detail, step } from '../utils/logger';
+import { runCapture, runInherit } from '../utils/run-command';
+import { shortHash } from '../utils/short-hash';
+import { resolveDockerContext } from './resolve-docker-context';
+
+const TAG_HASH_LENGTH = 12;
+
+/** Image tag derived from the build context, so edits trigger a rebuild. */
+export function resolveImageTag(contextDirectory: string): string {
+  const files = fs
+    .readdirSync(contextDirectory)
+    .sort()
+    .map(
+      (file) => `${file}:${fs.readFileSync(path.join(contextDirectory, file), 'utf-8')}`,
+    )
+    .join('\n');
+
+  return `${IMAGE_REPOSITORY}:${shortHash(files, TAG_HASH_LENGTH)}`;
+}
+
+/**
+ * Builds the single shared development image on first use, then reuses it.
+ * Returns the tag the session should run.
+ */
+export function ensureImage(
+  options: {
+    image?: string | undefined;
+    rebuild?: boolean | undefined;
+    offline?: boolean | undefined;
+  } = {},
+): string {
+  if (options.offline) {
+    const tag =
+      options.image != null && options.image !== ''
+        ? options.image
+        : resolveImageTag(resolveDockerContext());
+    if (runCapture('docker', ['image', 'inspect', tag]).status !== 0) {
+      throw new Error(
+        'Offline mode requires a cached image. Run online first or select a local --image.',
+      );
+    }
+    return tag;
+  }
+  if (options.image != null && options.image !== '') {
+    return options.image;
+  }
+
+  const context = resolveDockerContext();
+  const tag = resolveImageTag(context);
+  const exists = runCapture('docker', ['image', 'inspect', tag]).status === 0;
+
+  if (exists && options.rebuild !== true) {
+    return tag;
+  }
+
+  step(`Building the shared sandbox image ${tag}`);
+  detail(`context: ${context}`);
+  const status = runInherit('docker', ['build', '-t', tag, context]);
+
+  if (status !== 0) {
+    throw new Error(`docker build failed with exit code ${status}`);
+  }
+
+  return tag;
+}
