@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.1.0
+
+### Minor Changes
+
+- removes docker volume after each session
+
 ## 1.0.4
 
 ### Patch Changes
