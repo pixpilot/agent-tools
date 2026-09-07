@@ -507,11 +507,13 @@ Git and curl honour these natively, so no `git config http.proxy` is needed.
 `SANDBOX_OFFLINE` is derived from `mode === 'none'`; the entrypoint is otherwise
 untouched.
 
-> Risk to verify during implementation: Node 22's `fetch` does not apply proxy
-> environment variables automatically. Each agent CLI must be confirmed to honour
-> `HTTPS_PROXY` itself. Claude Code documents that it does; Codex and Copilot CLI
-> need testing. If one does not, `strict` and `open` are both unusable for that
-> agent, and the finding goes in the README rather than being papered over.
+> **Resolved, and the opposite of what was assumed.** Node's `fetch` does honour
+> the proxy on `node:22-bookworm-slim` (v22.23.2), but only because
+> `NODE_USE_ENV_PROXY=1` is set: without it `fetch` resolves DNS itself and fails
+> with `EAI_AGAIN` on the internal network. That single variable is what makes
+> the agent's `WebFetch` and Node-based MCP servers work at all, so it is
+> load-bearing rather than future-proofing. Blocked hosts are still refused with
+> it set.
 
 ### 7.5 CLI surface
 

@@ -191,15 +191,33 @@ to discover what a repository needs.
 
 Measured with Claude Code against a real repository:
 
-| Capability                        | Under `strict`                                                                               |
-| --------------------------------- | -------------------------------------------------------------------------------------------- |
-| Model requests, `/login`          | work                                                                                         |
-| `WebSearch`                       | works — it runs server-side, so the container never connects                                 |
-| `WebFetch`                        | **fails** for any host not on the allowlist, which in practice means all documentation sites |
-| `git fetch`/`pull`/`push` (HTTPS) | work — the remote's host is allowlisted automatically                                        |
-| `git` over SSH                    | fails; `CONNECT` is restricted to port 443                                                   |
-| npm/pnpm/yarn installs            | work                                                                                         |
-| Postinstall binary downloads      | fail unless you add the CDN with `--allow-hosts`                                             |
+| Capability                        | Under `strict`                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------- |
+| Model requests, `/login`          | work                                                                            |
+| `WebSearch`                       | works — it runs server-side, so the container never connects                    |
+| `WebFetch`                        | works only for allowlisted hosts, so in practice every documentation site fails |
+| `git fetch`/`pull`/`push` (HTTPS) | work — the remote's host is allowlisted automatically                           |
+| `git` over SSH                    | fails; `CONNECT` is restricted to port 443                                      |
+| npm/pnpm/yarn installs            | work                                                                            |
+| Postinstall binary downloads      | fail unless you add the CDN with `--allow-hosts`                                |
+
+### MCP servers
+
+MCP servers are ordinary child processes in the same container, so they inherit
+the proxy environment and are subject to the same allowlist:
+
+| Kind                                         | Under `strict`                                      |
+| -------------------------------------------- | --------------------------------------------------- |
+| stdio server launched with `npx -y <pkg>`    | installs and runs — the npm registry is allowlisted |
+| stdio server that only touches the workspace | works; it needs no network                          |
+| stdio server that calls a third-party API    | needs that API's host via `--allow-hosts`           |
+| remote HTTP/SSE server                       | needs its host via `--allow-hosts`                  |
+| a server that downloads a browser or binary  | needs its CDN via `--allow-hosts`                   |
+
+Node-based servers do reach allowlisted hosts, including through `fetch`, because
+the container sets `NODE_USE_ENV_PROXY=1`. Without it Node resolves DNS itself and
+fails with `EAI_AGAIN`, so that variable is what makes both MCP servers and the
+agent's `WebFetch` work at all.
 
 Use `--network open` for research tasks, then read the printed hostnames to
 decide what deserves a permanent entry.
