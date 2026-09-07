@@ -1,9 +1,4 @@
-import {
-  AGENT_LABEL,
-  REPO_LABEL,
-  SANDBOX_LABEL,
-  WORKTREE_LABEL,
-} from '../constants';
+import { AGENT_LABEL, REPO_LABEL, SANDBOX_LABEL, WORKTREE_LABEL } from '../constants';
 import { pathKey } from '../utils/normalize-path';
 
 /** The session identity every Docker object this CLI creates is labelled with. */
