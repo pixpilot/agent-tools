@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.2.0
+
+### Minor Changes
+
+- add guided CLI setup
+
 ## 1.1.0
 
 ### Minor Changes
