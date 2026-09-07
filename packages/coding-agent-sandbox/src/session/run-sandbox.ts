@@ -4,14 +4,25 @@ import process from 'node:process';
 import { getAgent } from '../agents/agent-registry';
 import { ensureDocker } from '../docker/ensure-docker';
 import { ensureImage } from '../docker/ensure-image';
+import { ensureProxyImage } from '../docker/ensure-proxy-image';
+import { ensureSessionNetwork } from '../docker/ensure-session-network';
 import { ensureSessionVolumes } from '../docker/ensure-session-volumes';
 import { pruneVolumes } from '../docker/prune-volumes';
+import {
+  printProxyAudit,
+  readProxyHosts,
+  removeSessionNetwork,
+} from '../docker/remove-session-network';
 import { runContainer } from '../docker/run-container';
 import { detectEnvironment } from '../environments/detect-environment';
 import { ensureWorktree } from '../git/ensure-worktree';
 import { previewWorktree } from '../git/preview-worktree';
 import { resolveRepository } from '../git/resolve-repository';
 import { resolveWorktreePlan } from '../git/resolve-worktree-plan';
+import { buildProxyEnv } from '../network/build-proxy-env';
+import { usesProxy } from '../network/network-mode';
+import { resolveEgressHosts } from '../network/resolve-egress-hosts';
+import { sessionNetworkNames } from '../network/session-network-names';
 import { resolveSkillsDirectory } from '../skills/resolve-skills-directory';
 import { detail, step, success, warn } from '../utils/logger';
 import { buildContainerName } from './build-container-name';
@@ -97,6 +108,11 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     detail(`detected project environment: ${environment.label}`);
   }
 
+  const containerName = buildContainerName(agent.id, worktree.taskSlug, worktree.path);
+  const proxied = usesProxy(options.network);
+  const names = sessionNetworkNames(containerName);
+  const egressHosts = resolveEgressHosts({ agent, environment });
+
   const sessionPlan: SessionPlan = {
     agentId: agent.id,
     agentLabel: agent.label,
@@ -107,16 +123,20 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
           rebuild: options.rebuildImage,
           network: options.network,
         }),
-    containerName: buildContainerName(agent.id, worktree.taskSlug, worktree.path),
+    containerName,
     repositoryRoot: repository.root,
     worktreePath: worktree.path,
     gitDirPath: repository.gitDir,
     mountGit: options.gitMount,
     skillsPath: skills.path,
     volumes: buildSessionVolumes(agent, environment, worktree.path),
-    env: buildSessionEnv({ agent, environment, repository, worktree, skills, options }),
+    env: {
+      ...buildSessionEnv({ agent, environment, repository, worktree, skills, options }),
+      ...(proxied ? buildProxyEnv(names.proxyUrl) : {}),
+    },
     tty: process.stdin.isTTY === true,
     network: options.network,
+    networkName: proxied ? names.internal : undefined,
     cpus: options.cpus,
     memory: options.memory,
   };
@@ -126,15 +146,42 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     return 0;
   }
 
+  if (proxied) {
+    ensureSessionNetwork({
+      names,
+      mode: options.network === 'open' ? 'open' : 'strict',
+      allowHosts: egressHosts,
+      labels: sessionPlan,
+      proxyImage: ensureProxyImage({ rebuild: options.rebuildImage }),
+    });
+  }
+
   success(`Starting ${agent.label} in ${sessionPlan.containerName}`);
   ensureSessionVolumes(sessionPlan.volumes);
   let exitCode = 1;
+  let proxyHosts: string[] = [];
   try {
     exitCode = await runContainer(sessionPlan);
   } finally {
+    if (proxied) {
+      // The log dies with the container, so read it before teardown.
+      proxyHosts = readProxyHosts(names);
+      removeSessionNetwork(names);
+    }
     await pruneStaleVolumes();
   }
+
+  if (proxied) {
+    printProxyAudit(proxyHosts);
+  }
+
   printSessionSummary(worktree, exitCode);
+
+  if (exitCode !== 0 && options.network === 'strict') {
+    warn(
+      'This operation may require a host or protocol blocked by strict network mode. Retry with --network open if you trust this operation.',
+    );
+  }
 
   return exitCode;
 }

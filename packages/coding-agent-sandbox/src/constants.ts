@@ -20,6 +20,12 @@ export const PROXY_IMAGE_REPOSITORY = 'coding-agent-sandbox-proxy';
 export const PROXY_DOCKERFILE = 'Dockerfile.proxy';
 export const PROXY_PORT = 8888;
 export const CONTAINER_PREFIX = 'coding-agent-sandbox';
+export const NETWORK_PREFIX = `${CONTAINER_PREFIX}-net`;
+export const EGRESS_NETWORK_PREFIX = `${CONTAINER_PREFIX}-egress`;
+export const PROXY_CONTAINER_PREFIX = `${CONTAINER_PREFIX}-proxy`;
+
+/** Hosts the container must never send to the proxy. */
+export const NO_PROXY_HOSTS = 'localhost,127.0.0.1';
 
 export const SANDBOX_LABEL = 'com.pixpilot.sandbox';
 export const AGENT_LABEL = `${SANDBOX_LABEL}.agent`;

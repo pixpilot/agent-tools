@@ -9,11 +9,16 @@ import { resolveProxyImageTag } from './resolve-image-tag';
  * Builds the per-session egress proxy image on first use, then reuses it.
  * Separate from the agent image so a proxy change is a cheap rebuild.
  */
-export function ensureProxyImage(options: { rebuild?: boolean | undefined } = {}): string {
+export function ensureProxyImage(
+  options: { rebuild?: boolean | undefined } = {},
+): string {
   const context = resolveDockerContext();
   const tag = resolveProxyImageTag(context);
 
-  if (options.rebuild !== true && runCapture('docker', ['image', 'inspect', tag]).status === 0) {
+  if (
+    options.rebuild !== true &&
+    runCapture('docker', ['image', 'inspect', tag]).status === 0
+  ) {
     return tag;
   }
 

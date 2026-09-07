@@ -1,14 +1,11 @@
 import type { SessionPlan } from '../types';
 import {
-  AGENT_LABEL,
   CONTAINER_GIT_DIR,
   CONTAINER_SKILLS_SRC,
   CONTAINER_WORKSPACE,
-  REPO_LABEL,
-  SANDBOX_LABEL,
-  WORKTREE_LABEL,
 } from '../constants';
-import { pathKey, toMountSource } from '../utils/normalize-path';
+import { toMountSource } from '../utils/normalize-path';
+import { buildSandboxLabels } from './build-sandbox-labels';
 
 /** Generous enough for package managers and test runners, low enough to cap a fork bomb. */
 const AGENT_PIDS_LIMIT = 512;
@@ -24,14 +21,7 @@ export function buildRunArgs(plan: SessionPlan): string[] {
     plan.tty ? '-it' : '-i',
     '--name',
     plan.containerName,
-    '--label',
-    `${SANDBOX_LABEL}=1`,
-    '--label',
-    `${AGENT_LABEL}=${plan.agentId}`,
-    '--label',
-    `${WORKTREE_LABEL}=${pathKey(plan.worktreePath)}`,
-    '--label',
-    `${REPO_LABEL}=${pathKey(plan.repositoryRoot)}`,
+    ...buildSandboxLabels(plan),
     '--workdir',
     CONTAINER_WORKSPACE,
   ];

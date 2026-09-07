@@ -29,7 +29,15 @@ export {
   NodeEnvironment,
 } from './environments/index';
 export { ensureWorktree, resolveRepository, resolveWorktreePlan } from './git/index';
-export { renderHostFilter, resolveEgressHosts } from './network/index';
+export {
+  buildProxyEnv,
+  DEFAULT_NETWORK_MODE,
+  parseNetworkMode,
+  renderHostFilter,
+  resolveEgressHosts,
+  sessionNetworkNames,
+  usesProxy,
+} from './network/index';
 export { ensureWorktreeSourceIsClean, runSandbox } from './session/index';
 export {
   cloneSkillsRepository,
