@@ -27,6 +27,7 @@ export {
   NodeEnvironment,
 } from './environments/index';
 export { ensureWorktree, resolveRepository, resolveWorktreePlan } from './git/index';
+export { renderHostFilter, resolveEgressHosts } from './network/index';
 export { ensureWorktreeSourceIsClean, runSandbox } from './session/index';
 export {
   cloneSkillsRepository,

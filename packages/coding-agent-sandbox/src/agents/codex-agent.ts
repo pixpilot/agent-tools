@@ -7,6 +7,9 @@ export class CodexAgent extends AgentAdapter {
   readonly label = 'OpenAI Codex';
   readonly binary = 'codex';
   readonly installCommand = 'npm install -g @openai/codex@latest';
+  // auth.openai.com and chatgpt.com serve the device-code subscription login.
+  override readonly egressHosts = ['api.openai.com', 'auth.openai.com', 'chatgpt.com'];
+
   override readonly stateDirs = ['.codex'];
 
   readonly auth: AgentAuthConfig = {

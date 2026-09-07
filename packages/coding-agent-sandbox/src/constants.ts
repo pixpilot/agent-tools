@@ -31,6 +31,12 @@ export const CONTAINER_SKILLS_SRC = '/coding-agent-sandbox/skills';
 export const CONTAINER_SKILLS_WORK = '/coding-agent-sandbox/work';
 export const CONTAINER_STATE_ROOT = '/agent-state';
 
+/**
+ * Hosts the container bootstrap needs before any agent exists: every supported
+ * agent CLI and the skills repository install through npm.
+ */
+export const BOOTSTRAP_EGRESS_HOSTS: readonly string[] = ['registry.npmjs.org'];
+
 export const NPM_GLOBAL_VOLUME = 'coding-agent-sandbox-npm-global';
 export const HOME_CACHE_VOLUME = 'coding-agent-sandbox-cache-home';
 export const PACKAGE_CACHE_VOLUME = 'coding-agent-sandbox-package-cache';

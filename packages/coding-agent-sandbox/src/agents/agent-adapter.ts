@@ -16,6 +16,13 @@ export abstract class AgentAdapter {
   /** How the agent proves it is signed in. */
   abstract readonly auth: AgentAuthConfig;
 
+  /**
+   * Provider hosts this agent must reach in `strict` network mode, including
+   * its OAuth login flow. Signing in reaches more hosts than a running session,
+   * so verify these in `open` mode against a fresh, unauthenticated volume.
+   */
+  readonly egressHosts: readonly string[] = [];
+
   /** Home-relative directories persisted in the agent's Docker auth volume. */
   readonly stateDirs: readonly string[] = [];
   /** Home-relative files persisted in the agent's Docker auth volume. */

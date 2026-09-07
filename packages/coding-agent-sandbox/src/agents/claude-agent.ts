@@ -7,6 +7,15 @@ export class ClaudeAgent extends AgentAdapter {
   readonly label = 'Claude Code';
   readonly binary = 'claude';
   readonly installCommand = 'npm install -g @anthropic-ai/claude-code@latest';
+  // console/platform/claude.ai carry the subscription OAuth flow, not the API.
+  override readonly egressHosts = [
+    'api.anthropic.com',
+    'console.anthropic.com',
+    'platform.claude.com',
+    'claude.ai',
+    'statsig.anthropic.com',
+  ];
+
   override readonly stateDirs = ['.claude'];
   override readonly stateFiles = ['.claude.json'];
 

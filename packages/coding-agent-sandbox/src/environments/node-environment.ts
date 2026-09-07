@@ -10,6 +10,7 @@ export class NodeEnvironment extends EnvironmentAdapter {
   readonly id = 'node';
   readonly label = 'JavaScript / TypeScript';
   readonly installCommand = 'ni';
+  override readonly egressHosts = ['registry.npmjs.org'];
   override readonly volumePaths = ['/workspace/node_modules'];
 
   detect(worktreePath: string): boolean {

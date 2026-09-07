@@ -7,6 +7,13 @@ export class CopilotAgent extends AgentAdapter {
   readonly label = 'GitHub Copilot CLI';
   readonly binary = 'copilot';
   readonly installCommand = 'npm install -g @github/copilot@latest';
+  // github.com serves the device-flow login; api.githubcopilot.com the completions.
+  override readonly egressHosts = [
+    'api.github.com',
+    'api.githubcopilot.com',
+    'github.com',
+  ];
+
   override readonly stateDirs = ['.copilot', '.config/github-copilot'];
 
   readonly auth: AgentAuthConfig = {

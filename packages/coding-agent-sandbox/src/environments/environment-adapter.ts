@@ -15,6 +15,12 @@ export abstract class EnvironmentAdapter {
   abstract readonly installCommand: string;
 
   /**
+   * Registry hosts `installCommand` needs in `strict` network mode. Declared
+   * next to the command that reaches them so a new language stays one file.
+   */
+  readonly egressHosts: readonly string[] = [];
+
+  /**
    * Container paths kept in named volumes instead of the host worktree, so
    * dependency trees are neither written to Windows nor reinstalled each run.
    */
