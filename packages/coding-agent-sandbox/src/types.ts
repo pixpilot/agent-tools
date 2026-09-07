@@ -88,6 +88,8 @@ export interface SandboxOptions {
   dryRun: boolean;
   /** How much of the network the session gets. Replaces the old `offline` flag. */
   network: NetworkMode;
+  /** Extra hosts allowed in `strict`, on top of the resolved allowlist. */
+  allowHosts?: readonly string[] | undefined;
   /** `docker run --cpus` value; unconstrained when unset. */
   cpus?: string | undefined;
   /** `docker run --memory` value; unconstrained when unset. */

@@ -6,6 +6,8 @@ import { BOOTSTRAP_EGRESS_HOSTS } from '../constants';
 export interface EgressHostSources {
   agent: AgentAdapter;
   environment?: EnvironmentAdapter | undefined;
+  /** The repository's own Git remotes, plus anything `--allow-hosts` added. */
+  extraHosts?: readonly string[] | undefined;
 }
 
 /**
@@ -13,11 +15,16 @@ export interface EgressHostSources {
  * runs, plus the selected agent's provider, plus the detected environment's
  * registries. Deduplicated and sorted so the proxy config is deterministic.
  */
-export function resolveEgressHosts({ agent, environment }: EgressHostSources): string[] {
+export function resolveEgressHosts({
+  agent,
+  environment,
+  extraHosts,
+}: EgressHostSources): string[] {
   const hosts = [
     ...BOOTSTRAP_EGRESS_HOSTS,
     ...agent.egressHosts,
     ...(environment?.egressHosts ?? []),
+    ...(extraHosts ?? []),
   ].map((host) => host.trim().toLowerCase());
 
   return [...new Set(hosts.filter((host) => host !== ''))].sort();

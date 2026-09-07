@@ -83,6 +83,7 @@ Z:\github\roleclick.worktrees\fix-resume-generation-codex   -> /workspace  (a se
 | `--login`                 | Force the agent login flow before launching                                          |
 | `--dry-run`               | Preview Docker arguments with environment values omitted                             |
 | `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                  |
+| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                           |
 | `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                      |
 | `--memory <size>`         | Limit container memory (unconstrained by default)                                    |
 | `--offline`               | Deprecated alias for `--network none`                                                |
@@ -172,9 +173,36 @@ is no route, not because something is configured to refuse.
 | `none`      | nothing                                                     | skipped   |
 
 `strict` is the default. The allowlist is composed from the selected agent's
-`egressHosts`, the detected environment's `egressHosts`, and the npm registry the
-bootstrap itself needs. Every session prints the hostnames its proxy actually saw
-when it ends, in all modes — in `open` that audit trail is the whole point.
+`egressHosts`, the detected environment's `egressHosts`, the npm registry the
+bootstrap itself needs, and **the hostnames of the repository's own HTTPS Git
+remotes**, so `fetch`, `pull` and `push` keep working. Add anything else for one
+session with `--allow-hosts`:
+
+```sh
+# a repo whose postinstall pulls prebuilt binaries, plus the GitHub API for gh
+csbx --task fix-login --allow-hosts objects.githubusercontent.com api.github.com
+```
+
+Every session prints the hostnames its proxy actually saw when it ends, in all
+modes — in `open` that audit trail is the whole point, and it is the intended way
+to discover what a repository needs.
+
+### What `strict` breaks
+
+Measured with Claude Code against a real repository:
+
+| Capability                        | Under `strict`                                                                               |
+| --------------------------------- | -------------------------------------------------------------------------------------------- |
+| Model requests, `/login`          | work                                                                                         |
+| `WebSearch`                       | works — it runs server-side, so the container never connects                                 |
+| `WebFetch`                        | **fails** for any host not on the allowlist, which in practice means all documentation sites |
+| `git fetch`/`pull`/`push` (HTTPS) | work — the remote's host is allowlisted automatically                                        |
+| `git` over SSH                    | fails; `CONNECT` is restricted to port 443                                                   |
+| npm/pnpm/yarn installs            | work                                                                                         |
+| Postinstall binary downloads      | fail unless you add the CDN with `--allow-hosts`                                             |
+
+Use `--network open` for research tasks, then read the printed hostnames to
+decide what deserves a permanent entry.
 
 TLS is never intercepted. The proxy reads the hostname from the `CONNECT` line,
 decides, and then pipes bytes, so subscription OAuth logins and certificate

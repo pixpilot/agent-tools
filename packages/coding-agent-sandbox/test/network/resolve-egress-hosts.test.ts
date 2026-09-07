@@ -52,6 +52,26 @@ describe('resolveEgressHosts', () => {
     expect(hosts).toEqual([...hosts].sort());
   });
 
+  it('should allow the repository remotes and hosts the user asked for', () => {
+    const hosts = resolveEgressHosts({
+      agent: new ClaudeAgent(),
+      extraHosts: ['github.com', 'cdn.playwright.dev'],
+    });
+
+    expect(hosts).toContain('github.com');
+    expect(hosts).toContain('cdn.playwright.dev');
+  });
+
+  it('should deduplicate an extra host that a source already claimed', () => {
+    const hosts = resolveEgressHosts({
+      agent: new ClaudeAgent(),
+      environment: new NodeEnvironment(),
+      extraHosts: ['registry.npmjs.org'],
+    });
+
+    expect(hosts.filter((host) => host === 'registry.npmjs.org')).toHaveLength(1);
+  });
+
   it('should work when no project environment was detected', () => {
     const hosts = resolveEgressHosts({ agent: new ClaudeAgent() });
 

@@ -7,7 +7,7 @@ export {
   usesProxy,
 } from './network-mode';
 export type { NetworkMode } from './network-mode';
-export { renderHostFilter } from './render-host-filter';
+export { isEgressHost, renderHostFilter } from './render-host-filter';
 export { resolveEgressHosts } from './resolve-egress-hosts';
 export type { EgressHostSources } from './resolve-egress-hosts';
 export { sessionNetworkNames } from './session-network-names';

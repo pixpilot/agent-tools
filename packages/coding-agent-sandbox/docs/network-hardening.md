@@ -230,6 +230,8 @@ In `strict`:
 allowed = bootstrap hosts
         + AgentAdapter.egressHosts        (the selected agent's provider)
         + EnvironmentAdapter.egressHosts  (the detected project environment)
+        + the repository's own HTTPS Git remote hosts
+        + --allow-hosts                   (per session, never persisted)
 ```
 
 `egressHosts` is a new readonly field on both adapter base classes, defaulting to
@@ -252,6 +254,19 @@ repository install through npm.
 > empirically per agent** before release. The intended method: run each agent once
 > in `open` mode and read the hostnames out of the proxy log. That is also the
 > supported way for a user to discover what to widen for their own setup.
+
+> **Added after the first real session.** The repository's own Git remote was
+> missing, so `strict` broke `fetch`, `pull` and `push` in a tool whose whole
+> point is committing to that repository. The remote host is now derived from
+> `git config remote.*.url`, which is more principled than hardcoding a forge:
+> it allows exactly the host this repository already talks to. SSH remotes are
+> skipped, since they cannot traverse an HTTP proxy either way.
+>
+> The same session answered **D2**: Claude Code's `WebSearch` runs server-side
+> and survives `strict` intact, but `WebFetch` runs client-side and fails for any
+> host not on the allowlist - which is every documentation site. `strict` stays
+> the default; `open` is the documented answer for research, and `--allow-hosts`
+> covers the narrower case of one repository needing one extra CDN.
 
 Go is solved by configuration rather than by a longer list: the Go adapter sets
 `GOPROXY=https://proxy.golang.org` **without** `,direct`, plus

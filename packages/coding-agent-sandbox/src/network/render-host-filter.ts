@@ -9,6 +9,13 @@ const SUBDOMAIN_PREFIX = '([a-z0-9-]+\\.)+';
 
 const WILDCARD = '*.';
 
+/** True when a string is a hostname this allowlist can safely express. */
+export function isEgressHost(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+
+  return normalized.length <= MAX_HOST_LENGTH && HOST_PATTERN.test(normalized);
+}
+
 /**
  * Turns one allowlist host into an anchored regex for the proxy's filter file.
  * Tinyproxy matches filters unanchored, so a bare `registry.npmjs.org` would
@@ -25,7 +32,7 @@ export function renderHostFilter(host: string): string {
 
 /** Rejects anything that would inject regex syntax into the filter file. */
 function ensureValidHost(normalized: string, original: string): void {
-  if (normalized.length > MAX_HOST_LENGTH || !HOST_PATTERN.test(normalized)) {
+  if (!isEgressHost(normalized)) {
     throw new Error(
       `Invalid egress host ${JSON.stringify(original)}. Expected a hostname such as "example.com" or "*.example.com".`,
     );

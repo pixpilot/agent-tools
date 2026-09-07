@@ -16,6 +16,7 @@ import {
 import { runContainer } from '../docker/run-container';
 import { detectEnvironment } from '../environments/detect-environment';
 import { ensureWorktree } from '../git/ensure-worktree';
+import { getRemoteHosts } from '../git/get-remote-hosts';
 import { previewWorktree } from '../git/preview-worktree';
 import { resolveRepository } from '../git/resolve-repository';
 import { resolveWorktreePlan } from '../git/resolve-worktree-plan';
@@ -111,7 +112,13 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   const containerName = buildContainerName(agent.id, worktree.taskSlug, worktree.path);
   const proxied = usesProxy(options.network);
   const names = sessionNetworkNames(containerName);
-  const egressHosts = resolveEgressHosts({ agent, environment });
+  // The repository's own remotes must be reachable, or a session whose purpose
+  // is committing to that repository cannot fetch, pull or push.
+  const egressHosts = resolveEgressHosts({
+    agent,
+    environment,
+    extraHosts: [...getRemoteHosts(repository.root), ...(options.allowHosts ?? [])],
+  });
 
   const sessionPlan: SessionPlan = {
     agentId: agent.id,

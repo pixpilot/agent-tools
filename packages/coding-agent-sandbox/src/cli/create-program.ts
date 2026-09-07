@@ -48,6 +48,10 @@ export function createProgram(version: string): Command {
       `Egress policy (${NETWORK_MODES.join(' | ')})`,
       parseNetworkMode,
     )
+    .option(
+      '--allow-hosts <host...>',
+      'Extra hosts to allow in strict mode, e.g. cdn.playwright.dev',
+    )
     .option('--cpus <count>', 'Limit container CPUs (unconstrained by default)')
     .option('--memory <size>', 'Limit container memory (unconstrained by default)')
     .option('--offline', 'Deprecated alias for --network none')
