@@ -160,7 +160,7 @@ specification, not a strawman.
 
 ```
 agent container
-  └── coding-agent-sandbox-net-<session>          (--internal, no external route)
+  └── coding-agent-sandbox-net-<session>          (--internal + inhibit_ipv4)
         └── proxy sidecar (tinyproxy)
               └── coding-agent-sandbox-egress-<session>   (normal bridge)
                     └── internet
@@ -170,9 +170,23 @@ Everything is per session: one internal network, one egress network, one proxy
 container, one statically rendered proxy configuration — created at session start
 and removed at session end.
 
-- The agent container joins **only** the internal network. It has no default
-  route, and therefore no direct path to the internet, the LAN, the host gateway
-  or `169.254.169.254`.
+- The agent container joins **only** the internal network, created with
+  `--internal` **and** `--opt com.docker.network.bridge.inhibit_ipv4=true`. It
+  has no usable path to the internet, the LAN, the host or `169.254.169.254`.
+
+> **`--internal` alone is not sufficient, and this was measured, not assumed.**
+> An `--internal` network still has a gateway IP, the container still has a
+> default route to it, and that gateway is the Docker host. Verified on Docker
+> Desktop: a container on a plain `--internal` network reached a host process
+> listening on `0.0.0.0` through the gateway address. On Linux Docker Engine the
+> gateway is the developer's actual machine, so the exposure is worse — every
+> service bound to `0.0.0.0`, including dev servers and databases.
+>
+> `inhibit_ipv4=true` stops Docker assigning the gateway address to the bridge
+> interface, so there is nothing on-link to reach. Verified after the change:
+> the host listener is unreachable, while Docker's embedded DNS (127.0.0.11) and
+> container-to-container traffic to the proxy both still work.
+
 - The proxy is the only member of both networks, and the only egress path.
 - The egress network is per session rather than the shared default bridge, so the
   proxy's listener is unreachable from any other container. This costs one extra
@@ -561,18 +575,18 @@ A separate `test/integration/` suite gated behind an environment variable, since
 the shared vitest config runs in CI without Docker. Each case is a
 `docker run --rm --network <net-internal> <image> …` probe.
 
-| #   | Assertion                                                                                                                          |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Direct internet is blocked: `curl --noproxy '*' --max-time 5 https://example.com` fails                                            |
-| 2   | LAN is blocked: `curl --noproxy '*'` to an RFC1918 address fails                                                                   |
-| 3   | `169.254.169.254` is blocked                                                                                                       |
-| 4   | Gateway behaviour: the container has **no default route**, and the internal network's own gateway address is not usable for egress |
-| 5   | `host.docker.internal` is unresolvable, or resolvable but unreachable — asserted, not assumed                                      |
-| 6   | No proxy bypass: a direct, `--noproxy` request to an **allowed** host still fails                                                  |
-| 7   | An allowed host through the proxy returns 200 (`registry.npmjs.org`)                                                               |
-| 8   | A blocked host through the proxy is rejected (tinyproxy 403 / curl proxy failure)                                                  |
-| 9   | `open` mode reaches an arbitrary host, and that hostname appears in `docker logs <proxy>`                                          |
-| 10  | `none` mode has no network at all: only `lo`, every probe fails                                                                    |
+| #   | Assertion                                                                                                                                                                                                                           |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Direct internet is blocked: `curl --noproxy '*' --max-time 5 https://example.com` fails                                                                                                                                             |
+| 2   | LAN is blocked: `curl --noproxy '*'` to an RFC1918 address fails                                                                                                                                                                    |
+| 3   | `169.254.169.254` is blocked                                                                                                                                                                                                        |
+| 4   | Gateway behaviour: a default route and a gateway address still exist; the assertion is that the gateway is **unreachable**, so no host process listening on `0.0.0.0` can be reached through it. Regression test for `inhibit_ipv4` |
+| 5   | `host.docker.internal` is unresolvable, or resolvable but unreachable — asserted, not assumed                                                                                                                                       |
+| 6   | No proxy bypass: a direct, `--noproxy` request to an **allowed** host still fails                                                                                                                                                   |
+| 7   | An allowed host through the proxy returns 200 (`registry.npmjs.org`)                                                                                                                                                                |
+| 8   | A blocked host through the proxy is rejected (tinyproxy 403 / curl proxy failure)                                                                                                                                                   |
+| 9   | `open` mode reaches an arbitrary host, and that hostname appears in `docker logs <proxy>`                                                                                                                                           |
+| 10  | `none` mode has no network at all: only `lo`, every probe fails                                                                                                                                                                     |
 
 Extra, cheap: `CONNECT` to port 22 is refused even in `open` mode, confirming
 `ConnectPort 443`.

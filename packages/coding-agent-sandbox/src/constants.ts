@@ -16,6 +16,9 @@ export const DEFAULT_SKILLS_DIR = path.join(
 export const DEFAULT_AGENT = 'claude';
 
 export const IMAGE_REPOSITORY = 'coding-agent-sandbox';
+export const PROXY_IMAGE_REPOSITORY = 'coding-agent-sandbox-proxy';
+export const PROXY_DOCKERFILE = 'Dockerfile.proxy';
+export const PROXY_PORT = 8888;
 export const CONTAINER_PREFIX = 'coding-agent-sandbox';
 
 export const SANDBOX_LABEL = 'com.pixpilot.sandbox';

@@ -1,26 +1,8 @@
 import type { NetworkMode } from '../network/network-mode';
-import fs from 'node:fs';
-import path from 'node:path';
-import { IMAGE_REPOSITORY } from '../constants';
 import { detail, step } from '../utils/logger';
 import { runCapture, runInherit } from '../utils/run-command';
-import { shortHash } from '../utils/short-hash';
 import { resolveDockerContext } from './resolve-docker-context';
-
-const TAG_HASH_LENGTH = 12;
-
-/** Image tag derived from the build context, so edits trigger a rebuild. */
-export function resolveImageTag(contextDirectory: string): string {
-  const files = fs
-    .readdirSync(contextDirectory)
-    .sort()
-    .map(
-      (file) => `${file}:${fs.readFileSync(path.join(contextDirectory, file), 'utf-8')}`,
-    )
-    .join('\n');
-
-  return `${IMAGE_REPOSITORY}:${shortHash(files, TAG_HASH_LENGTH)}`;
-}
+import { resolveImageTag } from './resolve-image-tag';
 
 /**
  * Builds the single shared development image on first use, then reuses it.

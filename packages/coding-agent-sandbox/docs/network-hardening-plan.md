@@ -32,23 +32,27 @@ flowchart LR
 
 ### After
 
-The agent joins **one internal network with no external route**. The only other
-member is a proxy it does not control. Everything else is unreachable because
-there is no route, not because something is configured to say no.
+The agent joins **one internal network with no usable route off it**. The only
+other member is a proxy it does not control.
+
+The network needs `--internal` **and**
+`--opt com.docker.network.bridge.inhibit_ipv4=true`. `--internal` alone leaves
+the bridge gateway reachable, and that gateway is the Docker host - measured, see
+§9.
 
 ```mermaid
 flowchart LR
   A["agent container<br/>cap-drop=ALL<br/>no-new-privileges"] --> N1
 
   subgraph S["per session"]
-    N1["internal network<br/>no default route"] --> P["tinyproxy sidecar<br/>CONNECT :443 only"]
+    N1["internal network<br/>--internal + inhibit_ipv4"] --> P["tinyproxy sidecar<br/>CONNECT :443 only"]
     P --> N2["egress network<br/>normal bridge"]
   end
 
   N2 --> W["allowed hosts"]
 
   A -.->|"no route"| X1["LAN"]
-  A -.->|"no route"| X2["host gateway"]
+  A -.->|"no gateway IP"| X2["host gateway"]
   A -.->|"no route"| X3["169.254.169.254"]
 
   style A fill:#14532d,color:#fff,stroke:#22c55e
@@ -351,7 +355,7 @@ flowchart TD
     A1["1 internet blocked"]
     A2["2 LAN blocked"]
     A3["3 169.254.169.254 blocked"]
-    A4["4 no default route; gateway unusable"]
+    A4["4 gateway exists but is unreachable"]
     A5["5 host.docker.internal unreachable"]
     A6["6 no proxy bypass — direct call to an ALLOWED host still fails"]
   end
@@ -389,13 +393,14 @@ work. Record the answers in the README.
 
 ## 9. What could stop this
 
-| Risk                                                                                                                                                                                                                     | Impact                                                             | When we find out |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | ---------------- |
-| **An agent CLI ignores `HTTPS_PROXY`.** Node 22's `fetch` does not apply proxy env vars automatically. Claude Code documents that it honours it; Codex and Copilot are unverified.                                       | `strict` **and** `open` are both unusable for that agent           | Step 3–4         |
-| **SNI bypass.** Tinyproxy filters the `CONNECT` hostname and cannot see the SNI inside the tunnel, so a disallowed domain co-hosted on an allowlisted CDN is reachable. Docker had to fix this exact bug in sbx v0.33.0. | Allowlist is weaker than it looks — must be documented, not hidden | Known now        |
-| **OAuth login hosts missing from the allowlist**                                                                                                                                                                         | First run on a fresh auth volume cannot log in                     | Step 7 testing   |
-| **`--internal` behaves differently on Docker Desktop**                                                                                                                                                                   | Portability claim fails                                            | Step 6, case 1–6 |
-| **Server-side vs client-side web search**                                                                                                                                                                                | If client-side, `strict` breaks research tasks                     | Manual testing   |
+| Risk                                                                                                                                                                                                                                                                                                                                                                                                                                   | Impact                                                                                                                        | When we find out |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| **An agent CLI ignores `HTTPS_PROXY`.** Node 22's `fetch` does not apply proxy env vars automatically. Claude Code documents that it honours it; Codex and Copilot are unverified.                                                                                                                                                                                                                                                     | `strict` **and** `open` are both unusable for that agent                                                                      | Step 3–4         |
+| **SNI bypass.** Tinyproxy filters the `CONNECT` hostname and cannot see the SNI inside the tunnel, so a disallowed domain co-hosted on an allowlisted CDN is reachable. Docker had to fix this exact bug in sbx v0.33.0.                                                                                                                                                                                                               | Allowlist is weaker than it looks — must be documented, not hidden                                                            | Known now        |
+| **OAuth login hosts missing from the allowlist**                                                                                                                                                                                                                                                                                                                                                                                       | First run on a fresh auth volume cannot log in                                                                                | Step 7 testing   |
+| **`--internal` alone leaves the host reachable — CONFIRMED, then fixed.** An `--internal` network still has a gateway IP, and that gateway is the Docker host; a container on one reached a host process listening on `0.0.0.0`. Fixed by also passing `--opt com.docker.network.bridge.inhibit_ipv4=true`, leaving the bridge with no address. Re-verified after the change: host unreachable, embedded DNS and the proxy still work. | Would have left T3 open on every platform, and worse on Linux Docker Engine where the gateway is the developer's real machine | Found in step 3  |
+| **`--internal` behaves differently on Docker Desktop**                                                                                                                                                                                                                                                                                                                                                                                 | Portability claim fails                                                                                                       | Step 6, case 1–6 |
+| **Server-side vs client-side web search**                                                                                                                                                                                                                                                                                                                                                                                              | If client-side, `strict` breaks research tasks                                                                                | Manual testing   |
 
 **Known, accepted breakages** — no preflight detection, no capability matrix. They
 fail closed, and a non-zero exit in `strict` prints:

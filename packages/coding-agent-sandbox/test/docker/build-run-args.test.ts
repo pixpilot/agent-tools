@@ -41,9 +41,7 @@ describe('buildRunArgs', () => {
         makePlan({ network, networkName: 'coding-agent-sandbox-net-abc123' }),
       );
 
-      expect(args[args.indexOf('--network') + 1]).toBe(
-        'coding-agent-sandbox-net-abc123',
-      );
+      expect(args[args.indexOf('--network') + 1]).toBe('coding-agent-sandbox-net-abc123');
       expect(args).not.toContain('--pull');
     },
   );

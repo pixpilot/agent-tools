@@ -14,10 +14,12 @@ export {
   buildRunArgs,
   ensureDocker,
   ensureImage,
+  ensureProxyImage,
   findWorktreeContainers,
   removeContainer,
   resolveDockerContext,
   resolveImageTag,
+  resolveProxyImageTag,
   runContainer,
 } from './docker/index';
 export {
