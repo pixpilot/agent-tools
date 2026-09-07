@@ -11,10 +11,10 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 
-describe('offline images', () => {
+describe('network none images', () => {
   it('should use an existing image without building or pulling', () => {
     vi.mocked(runCapture).mockReturnValue({ status: 0, stdout: '', stderr: '' });
-    expect(ensureImage({ image: 'local:test', offline: true })).toBe('local:test');
+    expect(ensureImage({ image: 'local:test', network: 'none' })).toBe('local:test');
     expect(runCapture).toHaveBeenCalledExactlyOnceWith('docker', [
       'image',
       'inspect',
@@ -24,7 +24,7 @@ describe('offline images', () => {
   });
   it('should fail if the image is missing without building or pulling', () => {
     vi.mocked(runCapture).mockReturnValue({ status: 1, stdout: '', stderr: '' });
-    expect(() => ensureImage({ image: 'missing:test', offline: true })).toThrow(
+    expect(() => ensureImage({ image: 'missing:test', network: 'none' })).toThrow(
       'cached image',
     );
     expect(runInherit).not.toHaveBeenCalled();

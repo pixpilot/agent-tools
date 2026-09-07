@@ -13,10 +13,7 @@ export interface EgressHostSources {
  * runs, plus the selected agent's provider, plus the detected environment's
  * registries. Deduplicated and sorted so the proxy config is deterministic.
  */
-export function resolveEgressHosts({
-  agent,
-  environment,
-}: EgressHostSources): string[] {
+export function resolveEgressHosts({ agent, environment }: EgressHostSources): string[] {
   const hosts = [
     ...BOOTSTRAP_EGRESS_HOSTS,
     ...agent.egressHosts,

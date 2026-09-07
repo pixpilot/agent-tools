@@ -19,6 +19,7 @@ describe('printSessionPlan', () => {
       skillsPath: '/skills',
       volumes: [],
       tty: false,
+      network: 'strict',
       env: {
         SANDBOX_AGENT_CMD: 'codex --example-secret super-secret',
         UNKNOWN_KEY: 'another-secret',

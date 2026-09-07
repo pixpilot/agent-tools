@@ -1,3 +1,4 @@
+import type { NetworkMode } from '../network/network-mode';
 import fs from 'node:fs';
 import path from 'node:path';
 import { IMAGE_REPOSITORY } from '../constants';
@@ -29,17 +30,17 @@ export function ensureImage(
   options: {
     image?: string | undefined;
     rebuild?: boolean | undefined;
-    offline?: boolean | undefined;
+    network?: NetworkMode | undefined;
   } = {},
 ): string {
-  if (options.offline) {
+  if (options.network === 'none') {
     const tag =
       options.image != null && options.image !== ''
         ? options.image
         : resolveImageTag(resolveDockerContext());
     if (runCapture('docker', ['image', 'inspect', tag]).status !== 0) {
       throw new Error(
-        'Offline mode requires a cached image. Run online first or select a local --image.',
+        '--network none requires a cached image. Run with a network first, or select a local --image.',
       );
     }
     return tag;

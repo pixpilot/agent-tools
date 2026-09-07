@@ -17,6 +17,7 @@ function makePlan(overrides: Partial<SessionPlan> = {}): SessionPlan {
     volumes: [{ name: 'coding-agent-sandbox-auth-claude', target: '/agent-state' }],
     env: { SANDBOX_AGENT_ID: 'claude' },
     tty: true,
+    network: 'strict',
     ...overrides,
   };
 }
@@ -26,11 +27,53 @@ function mountFor(args: string[], target: string): string | undefined {
 }
 
 describe('buildRunArgs', () => {
-  it('should disable networking and image pulls offline', () => {
-    const args = buildRunArgs(makePlan({ offline: true }));
+  it('should disable networking and image pulls when the mode is none', () => {
+    const args = buildRunArgs(makePlan({ network: 'none' }));
+
     expect(args[args.indexOf('--network') + 1]).toBe('none');
     expect(args[args.indexOf('--pull') + 1]).toBe('never');
-    expect(buildRunArgs(makePlan())).not.toContain('--network');
+  });
+
+  it.each(['strict', 'open'] as const)(
+    'should join only the per-session internal network in %s mode',
+    (network) => {
+      const args = buildRunArgs(
+        makePlan({ network, networkName: 'coding-agent-sandbox-net-abc123' }),
+      );
+
+      expect(args[args.indexOf('--network') + 1]).toBe(
+        'coding-agent-sandbox-net-abc123',
+      );
+      expect(args).not.toContain('--pull');
+    },
+  );
+
+  it('should not pin a network before the session network exists', () => {
+    expect(buildRunArgs(makePlan({ networkName: undefined }))).not.toContain('--network');
+  });
+
+  it('should drop capabilities and privilege escalation in every mode', () => {
+    for (const network of ['strict', 'open', 'none'] as const) {
+      const args = buildRunArgs(makePlan({ network }));
+
+      expect(args).toContain('--cap-drop=ALL');
+      expect(args).toContain('--security-opt=no-new-privileges');
+      expect(args[args.indexOf('--pids-limit') + 1]).toBe('512');
+    }
+  });
+
+  it('should leave CPU and memory unconstrained unless asked', () => {
+    const args = buildRunArgs(makePlan());
+
+    expect(args).not.toContain('--cpus');
+    expect(args).not.toContain('--memory');
+  });
+
+  it('should pass through explicit CPU and memory limits', () => {
+    const args = buildRunArgs(makePlan({ cpus: '2', memory: '4g' }));
+
+    expect(args[args.indexOf('--cpus') + 1]).toBe('2');
+    expect(args[args.indexOf('--memory') + 1]).toBe('4g');
   });
 
   it('should not mount the skills source when provisioning is disabled', () => {

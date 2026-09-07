@@ -8,6 +8,9 @@ const VALUE_FLAGS = new Set([
   '--workdir',
   '--network',
   '--pull',
+  '--pids-limit',
+  '--cpus',
+  '--memory',
   '-v',
   '-e',
 ]);

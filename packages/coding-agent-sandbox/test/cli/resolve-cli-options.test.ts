@@ -24,6 +24,7 @@ describe('resolveCliOptions', () => {
       rebuildImage: false,
       login: false,
       dryRun: false,
+      network: 'strict',
       yes: false,
     });
   });
@@ -36,7 +37,7 @@ describe('resolveCliOptions', () => {
       skillsDir: '/skills',
       fullAccess: false,
       gitMount: false,
-      offline: true,
+      network: 'none',
       yes: true,
     });
 
@@ -47,10 +48,17 @@ describe('resolveCliOptions', () => {
       skillsDir: '/skills',
       fullAccess: false,
       gitMount: false,
-      offline: true,
+      network: 'none',
       yes: true,
     });
     expect(detectDefaultRepo).not.toHaveBeenCalled();
+  });
+
+  it('should resolve the deprecated offline alias without leaking it downstream', () => {
+    const resolved = resolveCliOptions({ task: 'hotfix', offline: true });
+
+    expect(resolved.network).toBe('none');
+    expect(resolved).not.toHaveProperty('offline');
   });
 
   it('should trim the task and the repository', () => {

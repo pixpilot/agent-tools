@@ -50,9 +50,9 @@ describe('runWizard', () => {
     expect(confirmMock).not.toHaveBeenCalled();
   });
 
-  it('should collect a full online session', async () => {
+  it('should collect a full strict session', async () => {
     queue({
-      select: ['online', 'codex', true],
+      select: ['strict', 'codex', true],
       input: ['/work/app', 'fix login', '/skills'],
       confirm: [false],
     });
@@ -66,14 +66,14 @@ describe('runWizard', () => {
         skillsDir: '/skills',
         fullAccess: false,
         gitMount: true,
-        offline: false,
+        network: 'strict',
       },
     });
   });
 
-  it('should skip the skills question for an offline session', async () => {
+  it('should skip the skills question when there is no network', async () => {
     queue({
-      select: ['offline', 'claude', false],
+      select: ['none', 'claude', false],
       input: ['/work/app', 'fix login'],
     });
 
@@ -86,14 +86,14 @@ describe('runWizard', () => {
         skillsDir: undefined,
         fullAccess: true,
         gitMount: false,
-        offline: true,
+        network: 'none',
       },
     });
     expect(inputMock).toHaveBeenCalledTimes(2);
   });
 
   it('should offer the detected repository as the default', async () => {
-    queue({ select: ['online', 'claude', true], input: ['', 'fix login', '/skills'] });
+    queue({ select: ['strict', 'claude', true], input: ['', 'fix login', '/skills'] });
 
     await runWizard();
 
@@ -101,7 +101,7 @@ describe('runWizard', () => {
   });
 
   it('should preserve supplied values and skip their matching questions', async () => {
-    queue({ select: ['online', true], input: ['fix login'], confirm: [false] });
+    queue({ select: ['strict', true], input: ['fix login'], confirm: [false] });
 
     await expect(
       runWizard({ agent: 'codex', repo: '/work/app', skillsDir: '/skills' }),
@@ -114,7 +114,7 @@ describe('runWizard', () => {
         skillsDir: '/skills',
         fullAccess: false,
         gitMount: true,
-        offline: false,
+        network: 'strict',
       },
     });
     expect(inputMock).toHaveBeenCalledTimes(1);

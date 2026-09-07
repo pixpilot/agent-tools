@@ -28,6 +28,7 @@ const plan: SessionPlan = {
   volumes: [],
   env: {},
   tty: true,
+  network: 'strict',
 };
 
 beforeEach(() => {

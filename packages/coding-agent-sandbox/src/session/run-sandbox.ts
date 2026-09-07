@@ -28,9 +28,11 @@ import { printSessionSummary } from './print-session-summary';
  */
 export async function runSandbox(options: SandboxOptions): Promise<number> {
   const agent = getAgent(options.agent);
-  if (options.offline && (options.login || options.updateAgent || options.rebuildImage)) {
+  const offline = options.network === 'none';
+
+  if (offline && (options.login || options.updateAgent || options.rebuildImage)) {
     throw new Error(
-      '--offline cannot be combined with --login, --update-agent or --rebuild-image.',
+      '--network none cannot be combined with --login, --update-agent or --rebuild-image.',
     );
   }
 
@@ -48,7 +50,7 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   });
 
   const skills =
-    options.skills && !options.offline
+    options.skills && !offline
       ? await resolveSkillsDirectory({
           requested: options.skillsDir,
           repositoryUrl: options.skillsRepo,
@@ -56,9 +58,9 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
         })
       : { path: repository.root, syncCommand: 'true' };
 
-  if (options.offline) {
+  if (offline) {
     warn(
-      'Offline: skipping skills, installs and login. Cloud agents cannot reach their providers.',
+      'No network: skipping skills, installs and login. Cloud agents cannot reach their providers.',
     );
   } else if (options.skills) {
     detail(`skills: ${skills.path}`);
@@ -103,7 +105,7 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
       : ensureImage({
           image: options.image,
           rebuild: options.rebuildImage,
-          offline: options.offline,
+          network: options.network,
         }),
     containerName: buildContainerName(agent.id, worktree.taskSlug, worktree.path),
     repositoryRoot: repository.root,
@@ -114,7 +116,9 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     volumes: buildSessionVolumes(agent, environment, worktree.path),
     env: buildSessionEnv({ agent, environment, repository, worktree, skills, options }),
     tty: process.stdin.isTTY === true,
-    offline: options.offline,
+    network: options.network,
+    cpus: options.cpus,
+    memory: options.memory,
   };
 
   if (options.dryRun) {

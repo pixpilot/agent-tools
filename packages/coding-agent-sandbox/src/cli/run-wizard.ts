@@ -1,7 +1,9 @@
+import type { NetworkMode } from '../network/network-mode';
 import type { RawCliOptions } from './resolve-cli-options';
 import { confirm, input, select } from '@inquirer/prompts';
 import { listAgents } from '../agents/agent-registry';
 import { DEFAULT_AGENT, DEFAULT_SKILLS_DIR } from '../constants';
+import { DEFAULT_NETWORK_MODE } from '../network/network-mode';
 import { detectDefaultRepo } from './detect-default-repo';
 
 /** What the guided setup decided to do. */
@@ -14,29 +16,38 @@ export type WizardResult =
  * the answers take the same defaulting path as a non-interactive invocation.
  */
 export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResult> {
-  const action = initial.offline
-    ? 'offline'
-    : await select({
-        message: 'What would you like to do?',
-        choices: [
-          { name: 'Start a session with internet access', value: 'online' },
-          {
-            name: 'Start offline (installed CLI/image required; cloud agents cannot connect)',
-            value: 'offline',
-          },
-          {
-            name: 'Prune unused dependency/cache volumes (asks before deleting)',
-            value: 'prune',
-          },
-        ],
-        default: 'online',
-      });
+  const requestedMode = resolveRequestedMode(initial);
+  const action =
+    requestedMode ??
+    (await select<NetworkMode | 'prune'>({
+      message: 'What would you like to do?',
+      choices: [
+        {
+          name: 'Start a session (strict: provider and package registries only)',
+          value: 'strict',
+        },
+        {
+          name: 'Start a session with open network access (every hostname is logged)',
+          value: 'open',
+        },
+        {
+          name: 'Start with no network (installed CLI/image required; cloud agents cannot connect)',
+          value: 'none',
+        },
+        {
+          name: 'Prune unused dependency/cache volumes (asks before deleting)',
+          value: 'prune',
+        },
+      ],
+      default: DEFAULT_NETWORK_MODE,
+    }));
 
   if (action === 'prune') {
     return { action: 'prune' };
   }
 
-  const offline = action === 'offline';
+  const network: NetworkMode = action;
+  const offline = network === 'none';
 
   const agent =
     initial.agent ??
@@ -106,6 +117,11 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
 
   return {
     action: 'session',
-    options: { ...initial, agent, repo, task, skillsDir, fullAccess, gitMount, offline },
+    options: { ...initial, agent, repo, task, skillsDir, fullAccess, gitMount, network },
   };
+}
+
+/** The mode already chosen on the command line, including the `--offline` alias. */
+function resolveRequestedMode(initial: RawCliOptions): NetworkMode | undefined {
+  return initial.offline === true ? 'none' : initial.network;
 }

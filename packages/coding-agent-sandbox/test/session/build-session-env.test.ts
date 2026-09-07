@@ -37,6 +37,7 @@ function makeOptions(overrides: Partial<SandboxOptions> = {}): SandboxOptions {
     login: false,
     dryRun: false,
     yes: false,
+    network: 'strict',
     ...overrides,
   };
 }
@@ -54,7 +55,7 @@ function build(overrides: Partial<SandboxOptions> = {}, agentId = 'claude') {
 
 describe('buildSessionEnv', () => {
   it('should disable provisioning and dependency installation offline', () => {
-    const env = build({ offline: true });
+    const env = build({ network: 'none' });
     expect(env['SANDBOX_OFFLINE']).toBe('1');
     expect(env['SANDBOX_SKILLS_ENABLED']).toBe('0');
     expect(env['SANDBOX_DEPS_INSTALL']).toBeUndefined();

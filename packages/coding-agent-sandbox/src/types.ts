@@ -1,6 +1,7 @@
 /**
  * Types shared across the sandbox CLI.
  */
+import type { NetworkMode } from './network/network-mode';
 
 /** How an agent proves it is signed in, and how to sign it in when it is not. */
 export interface AgentAuthConfig {
@@ -85,8 +86,12 @@ export interface SandboxOptions {
   rebuildImage: boolean;
   login: boolean;
   dryRun: boolean;
-  /** Disable container networking and all network-dependent bootstrap steps. */
-  offline?: boolean | undefined;
+  /** How much of the network the session gets. Replaces the old `offline` flag. */
+  network: NetworkMode;
+  /** `docker run --cpus` value; unconstrained when unset. */
+  cpus?: string | undefined;
+  /** `docker run --memory` value; unconstrained when unset. */
+  memory?: string | undefined;
   yes: boolean;
 }
 
@@ -113,5 +118,12 @@ export interface SessionPlan {
   env: Record<string, string>;
   /** Allocate a TTY; false when stdin is not a terminal. */
   tty: boolean;
-  offline?: boolean | undefined;
+  network: NetworkMode;
+  /**
+   * Per-session internal Docker network the container joins in `strict` and
+   * `open`. Absent until the session network has been created.
+   */
+  networkName?: string | undefined;
+  cpus?: string | undefined;
+  memory?: string | undefined;
 }

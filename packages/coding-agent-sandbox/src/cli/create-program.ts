@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { listAgents } from '../agents/agent-registry';
 import { DEFAULT_SKILLS_DIR } from '../constants';
+import { NETWORK_MODES, parseNetworkMode } from '../network/network-mode';
 import { parseBoolean } from './parse-boolean';
 
 /** Builds the Commander program; kept separate so it can be unit tested. */
@@ -43,9 +44,13 @@ export function createProgram(version: string): Command {
     )
     .option('--no-install', 'Skip project dependency installation')
     .option(
-      '--offline',
-      'Disable networking; require cached image and CLI, skip setup/login',
+      '--network <mode>',
+      `Egress policy (${NETWORK_MODES.join(' | ')})`,
+      parseNetworkMode,
     )
+    .option('--cpus <count>', 'Limit container CPUs (unconstrained by default)')
+    .option('--memory <size>', 'Limit container memory (unconstrained by default)')
+    .option('--offline', 'Deprecated alias for --network none')
     .option('--no-skills', 'Skip skills/prompts provisioning')
     .option('--no-git-mount', 'Do not mount the shared .git directory')
     .option('--update-agent', 'Reinstall/upgrade the agent CLI in the container')

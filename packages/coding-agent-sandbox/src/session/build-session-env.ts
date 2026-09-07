@@ -30,9 +30,12 @@ export interface SessionEnvInputs {
 export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string> {
   const { agent, environment, repository, worktree, options } = inputs;
   const seeds = partitionSeedFiles(options.seedFiles ?? []);
+  // `none` is the only mode without a network, so it is the only one that has
+  // to skip the skills sync, the dependency install and the login.
+  const offline = options.network === 'none';
 
   const env: Record<string, string> = {
-    SANDBOX_OFFLINE: options.offline ? '1' : '0',
+    SANDBOX_OFFLINE: offline ? '1' : '0',
     SANDBOX_AGENT_ID: agent.id,
     SANDBOX_AGENT_LABEL: agent.label,
     SANDBOX_AGENT_BIN: agent.binary,
@@ -49,7 +52,7 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
     SANDBOX_AUTH_HINT: agent.auth.hint,
     SANDBOX_AUTH_VOLUME: agent.authVolume,
     SANDBOX_FORCE_LOGIN: options.login ? '1' : '0',
-    SANDBOX_SKILLS_ENABLED: options.skills && !options.offline ? '1' : '0',
+    SANDBOX_SKILLS_ENABLED: options.skills && !offline ? '1' : '0',
     SANDBOX_SKILLS_SRC: CONTAINER_SKILLS_SRC,
     SANDBOX_SKILLS_WORK: CONTAINER_SKILLS_WORK,
     SANDBOX_SKILLS_SYNC_CMD: inputs.skills.syncCommand,
@@ -65,7 +68,7 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
     env['SANDBOX_LOGIN_CMD'] = agent.auth.loginCommand;
   }
 
-  if (environment != null && options.install && !options.offline) {
+  if (environment != null && options.install && !offline) {
     env['SANDBOX_ENV_LABEL'] = environment.label;
     env['SANDBOX_DEPS_INSTALL'] = environment.installCommand;
   }
