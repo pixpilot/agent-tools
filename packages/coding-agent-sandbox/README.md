@@ -24,15 +24,15 @@ With no `--repo`, the repository containing the current directory is used. With 
 
 A bare invocation asks, in order:
 
-| Question                                    | Default                                                                                |
-| ------------------------------------------- | -------------------------------------------------------------------------------------- |
-| What would you like to do?                  | Start a session with internet access — or start offline, or prune unused cache volumes |
-| Which coding agent should run this task?    | Claude Code                                                                            |
-| Main Git repository path                    | The repository containing the current directory                                        |
-| Task name                                   | _(required)_                                                                           |
-| Centralized skills/prompts directory        | `%USERPROFILE%\.coding-agent-sandbox\skills` — skipped for an offline session          |
-| Let the agent act without approval prompts? | Yes                                                                                    |
-| Allow writes to shared Git metadata?        | Yes                                                                                    |
+| Question                                    | Default                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------ |
+| What would you like to do?                  | Start a `strict`, `open` or no-network session — or prune unused cache volumes |
+| Which coding agent should run this task?    | Claude Code                                                                    |
+| Main Git repository path                    | The repository containing the current directory                                |
+| Task name                                   | _(required)_                                                                   |
+| Centralized skills/prompts directory        | `%USERPROFILE%\.coding-agent-sandbox\skills` — skipped without a network       |
+| Let the agent act without approval prompts? | Yes                                                                            |
+| Allow writes to shared Git metadata?        | Yes                                                                            |
 
 The guided setup needs a terminal. Without one, use `--yes --task` and any other options instead.
 
@@ -82,7 +82,10 @@ Z:\github\roleclick.worktrees\fix-resume-generation-codex   -> /workspace  (a se
 | `--rebuild-image`         | Rebuild the shared development image                                                 |
 | `--login`                 | Force the agent login flow before launching                                          |
 | `--dry-run`               | Preview Docker arguments with environment values omitted                             |
-| `--offline`               | Disable container networking; skip provisioning, installs and login                  |
+| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                  |
+| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                      |
+| `--memory <size>`         | Limit container memory (unconstrained by default)                                    |
+| `--offline`               | Deprecated alias for `--network none`                                                |
 | `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset              |
 | `--list-agents`           | List the supported agents and exit                                                   |
 
@@ -156,9 +159,49 @@ Codex uses `codex login --device-auth`, so no callback port is published. Device
 
 ## Networking and secrets
 
-Normal sessions use Docker's default networking with unrestricted outbound access, subject to host/network policy. No inbound ports or Docker socket are published. Agent processes, project scripts and skills sync code can send any data they can read—including mounted source and persistent credentials—to external services. Docker filesystem isolation does not prevent this exfiltration.
+Every session runs behind its own egress proxy. The container joins a per-session
+internal Docker network with no usable route off it; the only other member is a
+tinyproxy sidecar that also holds a normal bridge. Nothing else is reachable —
+not the internet, the LAN, the Docker host or `169.254.169.254` — because there
+is no route, not because something is configured to refuse.
 
-`--offline` runs with `--network none` and `--pull never`. It skips skills discovery/cloning/sync, dependency installs, CLI installs/updates and authentication. A local image and installed CLI are required; prepare them online first, or select a cached `--image`. It rejects `--login`, `--update-agent` and `--rebuild-image`. Cloud-backed agents cannot make model requests offline, and host or remote model servers are unreachable. Local tools and models running inside the container may still work. Existing mounted state remains available and writable.
+| `--network` | Egress                                                      | Bootstrap |
+| ----------- | ----------------------------------------------------------- | --------- |
+| `strict`    | the agent's provider plus the detected project's registries | full      |
+| `open`      | any hostname, every one of them logged                      | full      |
+| `none`      | nothing                                                     | skipped   |
+
+`strict` is the default. The allowlist is composed from the selected agent's
+`egressHosts`, the detected environment's `egressHosts`, and the npm registry the
+bootstrap itself needs. Every session prints the hostnames its proxy actually saw
+when it ends, in all modes — in `open` that audit trail is the whole point.
+
+TLS is never intercepted. The proxy reads the hostname from the `CONNECT` line,
+decides, and then pipes bytes, so subscription OAuth logins and certificate
+pinning keep working.
+
+**Known limits.** `CONNECT` is restricted to port 443, so Git over SSH and tools
+using raw sockets fail in every mode; HTTPS remotes work where the host is
+permitted. A non-MITM proxy cannot see the SNI inside a tunnel, so a blocked
+domain co-hosted on an allowlisted host's CDN is still reachable. DNS-based
+exfiltration is out of scope. The goal is to remove the easy outbound paths and
+make the rest auditable, not to provide data-loss prevention — and the persistent
+credential volume is still mounted and still readable by anything in the
+container.
+
+If something fails only under `strict`, rerun with `--network open` when you
+trust the operation, then read the printed hostnames to decide what to allow.
+
+`--network none` also runs with `--pull never` and skips skills
+discovery/cloning/sync, dependency installs, CLI installs/updates and
+authentication. A local image and installed CLI are required; prepare them with a
+network first, or select a cached `--image`. It rejects `--login`,
+`--update-agent` and `--rebuild-image`. Cloud-backed agents cannot make model
+requests without a network. Existing mounted state remains available and writable.
+
+Containers run with `--cap-drop=ALL`, `--security-opt=no-new-privileges` and a
+PID limit, as non-root `node`. CPU and memory are unconstrained unless you pass
+`--cpus` or `--memory`. No inbound ports or Docker socket are published.
 
 The CLI does not forward host API keys. Dry-run output omits all environment values, including agent commands. Never put secrets in `--agent-args`, repository URLs, paths or task names: arguments can appear in process listings or diagnostics. Terminal output uses inherited stdio and is **not sanitized**; an agent or subprocess may print sensitive data. Any future API-key mode must pass only the active agent's required variables without embedding their values in command arguments or logs.
 
