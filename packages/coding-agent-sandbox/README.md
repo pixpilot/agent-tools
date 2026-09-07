@@ -6,19 +6,35 @@ The main checkout is never mounted. Each agent gets its own branch, its own work
 
 ## Quick start
 
-Through Scaffoldfy (recommended — it asks for the agent, repository, task and skills directory):
+Run it with no arguments for the guided setup — it asks what to do, then for the agent, repository, task, skills directory and permissions:
 
 ```sh
-npx @pixpilot/scaffoldfy@latest --config https://unpkg.com/@pixpilot/scaffoldfy-configs@latest/coding-agent-sandbox/scaffoldfy.json
+npx @pixpilot/coding-agent-sandbox@latest
 ```
 
-Or directly:
+Or drive it entirely with flags. **Passing any flag skips the guided setup**; everything unset falls back to its default and only `--task` is mandatory:
 
 ```sh
 npx @pixpilot/coding-agent-sandbox@latest --agent claude --task "fix resume generation"
 ```
 
-With no `--repo`, the repository containing the current directory is used.
+With no `--repo`, the repository containing the current directory is used. With no `--agent`, Claude Code is used.
+
+### Guided setup
+
+A bare invocation asks, in order:
+
+| Question                                    | Default                                                                                |
+| ------------------------------------------- | -------------------------------------------------------------------------------------- |
+| What would you like to do?                  | Start a session with internet access — or start offline, or prune unused cache volumes |
+| Which coding agent should run this task?    | Claude Code                                                                            |
+| Main Git repository path                    | The repository containing the current directory                                        |
+| Task name                                   | _(required)_                                                                           |
+| Centralized skills/prompts directory        | `%USERPROFILE%\.coding-agent-sandbox\skills` — skipped for an offline session          |
+| Let the agent act without approval prompts? | Yes                                                                                    |
+| Allow writes to shared Git metadata?        | Yes                                                                                    |
+
+The guided setup needs a terminal. Without one, pass `--task` and any other options instead.
 
 ## What a session does
 
@@ -67,7 +83,7 @@ Z:\github\roleclick.worktrees\fix-resume-generation-codex   -> /workspace  (a se
 | `--login`                 | Force the agent login flow before launching                                          |
 | `--dry-run`               | Preview Docker arguments with environment values omitted                             |
 | `--offline`               | Disable container networking; skip provisioning, installs and login                  |
-| `-y, --yes`               | Never prompt; fail when a required option is missing                                 |
+| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset              |
 | `--list-agents`           | List the supported agents and exit                                                   |
 
 ### Examples

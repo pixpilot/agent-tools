@@ -8,7 +8,7 @@ import { cloneSkillsRepository } from './clone-skills-repository';
 import { validateSkillsDirectory } from './validate-skills-directory';
 
 export interface ResolveSkillsOptions {
-  /** Explicit directory from `--skills-dir` or a Scaffoldfy prompt. */
+  /** Explicit directory from `--skills-dir` or the guided setup. */
   requested?: string | undefined;
   /** Repository cloned by the "clone the default" choice. */
   repositoryUrl?: string | undefined;

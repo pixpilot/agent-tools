@@ -11,7 +11,9 @@ export function createProgram(version: string): Command {
 
   return new Command()
     .name('coding-agent-sandbox')
-    .description('Run AI coding agents in Docker against a dedicated Git worktree')
+    .description(
+      'Run AI coding agents in Docker against a dedicated Git worktree. Run without any flags for the guided setup.',
+    )
     .version(version)
     .option('--agent <agent>', `Coding agent to run (${agents})`)
     .option(
@@ -50,6 +52,9 @@ export function createProgram(version: string): Command {
     .option('--rebuild-image', 'Rebuild the shared development image')
     .option('--login', 'Force the agent login flow before launching')
     .option('--dry-run', 'Print the docker run command without starting anything')
-    .option('-y, --yes', 'Never prompt; fail when a required option is missing')
+    .option(
+      '-y, --yes',
+      'Never prompt; skip the guided setup and use defaults for anything unset',
+    )
     .option('--list-agents', 'List the supported coding agents and exit');
 }

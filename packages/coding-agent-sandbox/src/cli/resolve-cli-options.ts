@@ -1,10 +1,8 @@
 import type { SandboxOptions } from '../types';
-import process from 'node:process';
-import { input, select } from '@inquirer/prompts';
-import { listAgents } from '../agents/agent-registry';
+import { DEFAULT_AGENT } from '../constants';
 import { detectDefaultRepo } from './detect-default-repo';
 
-/** Raw option bag produced by Commander. */
+/** Raw option bag produced by Commander or by the guided setup. */
 export interface RawCliOptions extends Partial<
   Omit<SandboxOptions, 'agent' | 'repo' | 'task'>
 > {
@@ -14,40 +12,25 @@ export interface RawCliOptions extends Partial<
 }
 
 /**
- * Fills in anything Scaffoldfy or the flags did not provide. Prompts only when
- * a terminal is attached; otherwise missing values are a hard error.
+ * Applies the documented defaults to a raw option bag. This never prompts: the
+ * guided setup only runs for a bare invocation, so once any flag is present the
+ * run is entirely flag-driven and a missing `--task` is a hard error.
  */
-export async function resolveCliOptions(raw: RawCliOptions): Promise<SandboxOptions> {
-  const interactive = process.stdin.isTTY === true && raw.yes !== true;
+export function resolveCliOptions(raw: RawCliOptions): SandboxOptions {
+  const task = raw.task?.trim();
 
-  const agent =
-    raw.agent ??
-    (await askOrFail(interactive, '--agent', async () =>
-      select({
-        message: 'Which coding agent should run this task?',
-        choices: listAgents().map((candidate) => ({
-          name: candidate.label,
-          value: candidate.id,
-        })),
-      }),
-    ));
+  if (task == null || task === '') {
+    throw new Error(
+      '--task is required. Run coding-agent-sandbox with no arguments for the guided setup.',
+    );
+  }
 
-  const repo =
-    raw.repo ??
-    (await askOrFail(interactive, '--repo', async () =>
-      input({ message: 'Main Git repository path', default: detectDefaultRepo() }),
-    ));
-
-  const task =
-    raw.task ??
-    (await askOrFail(interactive, '--task', async () =>
-      input({ message: 'Task name', required: true }),
-    ));
+  const repo = raw.repo?.trim();
 
   return {
     ...raw,
-    agent,
-    repo,
+    agent: raw.agent ?? DEFAULT_AGENT,
+    repo: repo != null && repo !== '' ? repo : detectDefaultRepo(),
     task,
     fullAccess: raw.fullAccess ?? true,
     install: raw.install ?? true,
@@ -59,16 +42,4 @@ export async function resolveCliOptions(raw: RawCliOptions): Promise<SandboxOpti
     dryRun: raw.dryRun ?? false,
     yes: raw.yes ?? false,
   };
-}
-
-async function askOrFail<T>(
-  interactive: boolean,
-  flag: string,
-  ask: () => Promise<T>,
-): Promise<T> {
-  if (!interactive) {
-    throw new Error(`${flag} is required when running without a terminal.`);
-  }
-
-  return ask();
 }

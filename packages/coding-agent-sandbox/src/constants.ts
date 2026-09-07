@@ -12,6 +12,9 @@ export const DEFAULT_SKILLS_DIR = path.join(
   'skills',
 );
 
+/** Agent selected when neither a flag nor the guided setup names one. */
+export const DEFAULT_AGENT = 'claude';
+
 export const IMAGE_REPOSITORY = 'coding-agent-sandbox';
 export const CONTAINER_PREFIX = 'coding-agent-sandbox';
 

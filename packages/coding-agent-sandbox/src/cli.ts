@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 
 /**
- * CLI entry point. Scaffoldfy owns the front-door prompts; this binary owns the
- * Git worktree, the Docker lifecycle and the interactive agent session.
+ * CLI entry point. A bare invocation runs the guided setup; as soon as any flag
+ * is present the run is flag-driven. This binary owns the Git worktree, the
+ * Docker lifecycle and the interactive agent session.
  */
 import type { RawCliOptions } from './cli/resolve-cli-options';
+import type { SandboxOptions } from './types';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { listAgents } from './agents/agent-registry';
 import { createProgram } from './cli/create-program';
+import { hasExplicitOptions } from './cli/has-explicit-options';
 import { resolveCliOptions } from './cli/resolve-cli-options';
+import { runWizard } from './cli/run-wizard';
 import { EXIT_CODE_ERROR } from './constants';
 import { pruneVolumes } from './docker/prune-volumes';
 import { runSandbox } from './session/run-sandbox';
@@ -57,8 +61,28 @@ async function main(): Promise<void> {
     return;
   }
 
-  const exitCode = await runSandbox(await resolveCliOptions(raw));
-  process.exitCode = exitCode;
+  let options: SandboxOptions;
+
+  if (hasExplicitOptions(program)) {
+    options = resolveCliOptions(raw);
+  } else {
+    if (process.stdin.isTTY !== true) {
+      throw new Error(
+        'The guided setup needs a terminal. Pass --task (and any other options) instead.',
+      );
+    }
+
+    const result = await runWizard();
+
+    if (result.action === 'prune') {
+      await pruneVolumes();
+      return;
+    }
+
+    options = resolveCliOptions(result.options);
+  }
+
+  process.exitCode = await runSandbox(options);
 }
 
 main().catch((cause: unknown) => {
