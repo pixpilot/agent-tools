@@ -12,10 +12,10 @@ Run it with no arguments for the guided setup — it asks what to do, then for t
 npx @pixpilot/coding-agent-sandbox@latest
 ```
 
-Or drive it entirely with flags. **Passing any flag skips the guided setup**; everything unset falls back to its default and only `--task` is mandatory:
+Flags prefill the guided setup and skip their matching questions. Add `-y` or `--yes` to skip every prompt; in that non-interactive mode, `--task` is mandatory:
 
 ```sh
-npx @pixpilot/coding-agent-sandbox@latest --agent claude --task "fix resume generation"
+npx @pixpilot/coding-agent-sandbox@latest --agent claude --task "fix resume generation" --yes
 ```
 
 With no `--repo`, the repository containing the current directory is used. With no `--agent`, Claude Code is used.
@@ -34,7 +34,7 @@ A bare invocation asks, in order:
 | Let the agent act without approval prompts? | Yes                                                                                    |
 | Allow writes to shared Git metadata?        | Yes                                                                                    |
 
-The guided setup needs a terminal. Without one, pass `--task` and any other options instead.
+The guided setup needs a terminal. Without one, use `--yes --task` and any other options instead.
 
 ## What a session does
 

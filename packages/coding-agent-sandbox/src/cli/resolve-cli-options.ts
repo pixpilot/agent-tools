@@ -12,16 +12,15 @@ export interface RawCliOptions extends Partial<
 }
 
 /**
- * Applies the documented defaults to a raw option bag. This never prompts: the
- * guided setup only runs for a bare invocation, so once any flag is present the
- * run is entirely flag-driven and a missing `--task` is a hard error.
+ * Applies the documented defaults to a raw option bag. This never prompts, so
+ * the task remains mandatory for non-interactive and programmatic calls.
  */
 export function resolveCliOptions(raw: RawCliOptions): SandboxOptions {
   const task = raw.task?.trim();
 
   if (task == null || task === '') {
     throw new Error(
-      '--task is required. Run coding-agent-sandbox with no arguments for the guided setup.',
+      '--task is required. Remove --yes to complete the guided setup interactively.',
     );
   }
 

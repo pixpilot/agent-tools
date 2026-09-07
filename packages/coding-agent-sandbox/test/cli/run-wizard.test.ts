@@ -99,4 +99,24 @@ describe('runWizard', () => {
 
     expect(inputMock.mock.calls[0]?.[0]).toMatchObject({ default: '/detected/repo' });
   });
+
+  it('should preserve supplied values and skip their matching questions', async () => {
+    queue({ select: ['online', true], input: ['fix login'], confirm: [false] });
+
+    await expect(
+      runWizard({ agent: 'codex', repo: '/work/app', skillsDir: '/skills' }),
+    ).resolves.toStrictEqual({
+      action: 'session',
+      options: {
+        agent: 'codex',
+        repo: '/work/app',
+        task: 'fix login',
+        skillsDir: '/skills',
+        fullAccess: false,
+        gitMount: true,
+        offline: false,
+      },
+    });
+    expect(inputMock).toHaveBeenCalledTimes(1);
+  });
 });

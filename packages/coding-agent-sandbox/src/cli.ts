@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * CLI entry point. A bare invocation runs the guided setup; as soon as any flag
- * is present the run is flag-driven. This binary owns the Git worktree, the
- * Docker lifecycle and the interactive agent session.
+ * CLI entry point. Flags prefill the guided setup; --yes opts into a fully
+ * non-interactive run. This binary owns the Git worktree, Docker lifecycle and
+ * interactive agent session.
  */
 import type { RawCliOptions } from './cli/resolve-cli-options';
 import type { SandboxOptions } from './types';
@@ -13,7 +13,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { listAgents } from './agents/agent-registry';
 import { createProgram } from './cli/create-program';
-import { hasExplicitOptions } from './cli/has-explicit-options';
+import { getExplicitOptions, hasExplicitOptions } from './cli/has-explicit-options';
 import { resolveCliOptions } from './cli/resolve-cli-options';
 import { runWizard } from './cli/run-wizard';
 import { EXIT_CODE_ERROR } from './constants';
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
       );
     }
 
-    const result = await runWizard();
+    const result = await runWizard(getExplicitOptions(program));
 
     if (result.action === 'prune') {
       await pruneVolumes();

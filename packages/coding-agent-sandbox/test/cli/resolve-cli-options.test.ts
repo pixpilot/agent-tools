@@ -69,9 +69,7 @@ describe('resolveCliOptions', () => {
     expect(() => resolveCliOptions({ task })).toThrow(/--task is required/u);
   });
 
-  it('should never prompt for a missing task', () => {
-    expect(() => resolveCliOptions({ agent: 'codex' })).toThrow(
-      /Run coding-agent-sandbox with no arguments for the guided setup/u,
-    );
+  it('should reject a missing task for non-interactive callers', () => {
+    expect(() => resolveCliOptions({ agent: 'codex' })).toThrow(/--task is required/u);
   });
 });

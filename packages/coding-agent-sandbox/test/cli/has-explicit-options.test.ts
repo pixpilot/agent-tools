@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createProgram } from '../../src/cli/create-program';
-import { hasExplicitOptions } from '../../src/cli/has-explicit-options';
+import {
+  getExplicitOptions,
+  hasExplicitOptions,
+} from '../../src/cli/has-explicit-options';
 
 function parse(argv: readonly string[]): boolean {
   const program = createProgram('0.0.0');
@@ -10,23 +13,20 @@ function parse(argv: readonly string[]): boolean {
 }
 
 describe('hasExplicitOptions', () => {
-  it('should report no flags for a bare invocation', () => {
+  it('should report false for a bare invocation', () => {
     expect(parse([])).toBe(false);
   });
 
-  it.each([
-    ['--task', 'fix login'],
-    ['--agent', 'codex'],
-  ])('should detect %s', (...argv) => {
-    expect(parse(argv)).toBe(true);
-  });
-
-  it.each([['--offline'], ['--yes'], ['-y'], ['--dry-run'], ['--no-git-mount']])(
-    'should detect the boolean flag %s',
-    (flag) => {
-      expect(parse([flag])).toBe(true);
+  it.each([['--task', 'fix login'], ['--agent', 'codex'], ['--offline']])(
+    'should keep the guided setup for %s',
+    (...argv) => {
+      expect(parse(argv)).toBe(false);
     },
   );
+
+  it.each([['--yes'], ['-y']])('should select non-interactive mode for %s', (flag) => {
+    expect(parse([flag])).toBe(true);
+  });
 
   it('should not count an option that only has its default value', () => {
     const program = createProgram('0.0.0');
@@ -35,5 +35,16 @@ describe('hasExplicitOptions', () => {
 
     expect(program.opts<{ fullAccess: boolean }>().fullAccess).toBe(true);
     expect(hasExplicitOptions(program)).toBe(false);
+  });
+
+  it('should return only options explicitly passed on the command line', () => {
+    const program = createProgram('0.0.0');
+    program.action(() => {});
+    program.parse(['node', 'cli', '--skills-dir', '/skills', '--no-git-mount']);
+
+    expect(getExplicitOptions(program)).toStrictEqual({
+      skillsDir: '/skills',
+      gitMount: false,
+    });
   });
 });
