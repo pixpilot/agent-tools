@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.2.1
+
+### Patch Changes
+
+- update CLI options handling and improve wizard flow
+
 ## 1.2.0
 
 ### Minor Changes
