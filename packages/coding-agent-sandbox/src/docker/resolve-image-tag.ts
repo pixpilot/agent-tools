@@ -32,7 +32,9 @@ function hashContext(
 ): string {
   const files = collectContextFiles(contextDirectory)
     .filter((file) => include(file.split('/')[0] as string))
-    .map((file) => `${file}:${fs.readFileSync(path.join(contextDirectory, file), 'utf-8')}`)
+    .map(
+      (file) => `${file}:${fs.readFileSync(path.join(contextDirectory, file), 'utf-8')}`,
+    )
     .join('\n');
 
   return shortHash(files, TAG_HASH_LENGTH);

@@ -6,7 +6,9 @@ const MANIFEST_NAME = '.agent-config-sync.json';
 
 /** Mirrors top-level entries while deleting only entries this synchronizer owns. */
 export function syncManagedDirectory(source: string, target: string): string[] {
-  const sourceEntries = fs.readdirSync(source, { withFileTypes: true }).map((entry) => entry.name);
+  const sourceEntries = fs
+    .readdirSync(source, { withFileTypes: true })
+    .map((entry) => entry.name);
   fs.mkdirSync(target, { recursive: true });
 
   for (const entry of readManagedEntries(target)) {
@@ -55,11 +57,15 @@ function readManagedEntries(directory: string): string[] {
   if (!fs.existsSync(manifestPath)) return [];
 
   try {
-    const parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as { entries?: unknown };
+    const parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as {
+      entries?: unknown;
+    };
     return Array.isArray(parsed.entries)
       ? parsed.entries.filter(
           (entry): entry is string =>
-            typeof entry === 'string' && path.basename(entry) === entry && entry !== MANIFEST_NAME,
+            typeof entry === 'string' &&
+            path.basename(entry) === entry &&
+            entry !== MANIFEST_NAME,
         )
       : [];
   } catch {

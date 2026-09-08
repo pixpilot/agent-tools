@@ -70,7 +70,10 @@ function copyMcpSnapshot(agent: AgentId, source: string, target: string): void {
   if (!isFile(source)) return;
   const servers = readInstalledMcpServers(agent, source);
   if (Object.keys(servers).length === 0) return;
-  fs.writeFileSync(target, `${JSON.stringify(sanitizeMcpServers(servers), null, JSON_INDENT_SPACES)}\n`);
+  fs.writeFileSync(
+    target,
+    `${JSON.stringify(sanitizeMcpServers(servers), null, JSON_INDENT_SPACES)}\n`,
+  );
 }
 
 function readInstalledMcpServers(

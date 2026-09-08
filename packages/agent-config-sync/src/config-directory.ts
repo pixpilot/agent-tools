@@ -39,20 +39,27 @@ export function findConfigComponent(
 function isValidComponentPath(candidate: string, component: ConfigComponent): boolean {
   try {
     const stats = fs.lstatSync(candidate);
-    return component === 'skills' || component === 'prompts' ? stats.isDirectory() : stats.isFile();
+    return component === 'skills' || component === 'prompts'
+      ? stats.isDirectory()
+      : stats.isFile();
   } catch {
     return false;
   }
 }
 
 /** Copies only recognized portable components without executing source code. */
-export function mergeConfigDirectories(sourceDirectory: string, targetDirectory: string): void {
+export function mergeConfigDirectories(
+  sourceDirectory: string,
+  targetDirectory: string,
+): void {
   fs.mkdirSync(targetDirectory, { recursive: true });
   for (const component of Object.keys(SOURCE_PATHS) as ConfigComponent[]) {
     const source = findConfigComponent(sourceDirectory, component);
     if (source != null) {
       const targetName =
-        component === 'mcp' ? path.basename(source) : (SOURCE_PATHS[component][0] as string);
+        component === 'mcp'
+          ? path.basename(source)
+          : (SOURCE_PATHS[component][0] as string);
       fs.cpSync(source, path.join(targetDirectory, targetName), {
         recursive: true,
         force: true,

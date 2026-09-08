@@ -19,7 +19,10 @@ const worktree = {
   created: true,
   gitDirRelative: 'worktrees/fix-resume-claude',
 };
-const configs: ConfigSourceInfo = { path: path.resolve('configs'), available: ['skills'] };
+const configs: ConfigSourceInfo = {
+  path: path.resolve('configs'),
+  available: ['skills'],
+};
 
 function makeOptions(overrides: Partial<SandboxOptions> = {}): SandboxOptions {
   return {

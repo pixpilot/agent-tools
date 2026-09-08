@@ -57,18 +57,15 @@ export function parseCliOptions(argv: readonly string[]): CliOptions {
     }
     if (argument === '--dry-run') {
       options.dryRun = true;
-    }
-    else if (argument === '--configs-dir') {
+    } else if (argument === '--configs-dir') {
       options.configDirectory = readValue(argv, ++index, argument);
-    }
-    else if (argument === '--home-dir') {
+    } else if (argument === '--home-dir') {
       options.homeDirectory = readValue(argv, ++index, argument);
-    }
-    else if (argument === '--agent') {
+    } else if (argument === '--agent') {
       options.agents.push(parseAgent(readValue(argv, ++index, argument)));
     } else {
       throw new Error(`Unknown option: ${argument}`);
-  }
+    }
   }
 
   return options;

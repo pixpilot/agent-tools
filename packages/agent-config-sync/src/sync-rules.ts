@@ -17,7 +17,8 @@ const COPILOT_FRONTMATTER = [
 export function extractRules(contents: string): string {
   const start = contents.indexOf(START);
   const end = contents.lastIndexOf(END);
-  const managed = start !== -1 && end > start ? contents.slice(start + START.length, end) : contents;
+  const managed =
+    start !== -1 && end > start ? contents.slice(start + START.length, end) : contents;
 
   return managed
     .replace(/^\s*<!--[^>]*-->\s*/u, '')

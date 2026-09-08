@@ -16,9 +16,13 @@ export function syncPrompts(source: string, target: string, agent: AgentId): str
   }
 
   const promptFiles = sourceFiles.filter((fileName) => fileName.endsWith('.prompt.md'));
-  const temporarySource = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-config-sync-prompts-'));
+  const temporarySource = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'agent-config-sync-prompts-'),
+  );
   try {
-    const targetFiles = promptFiles.map((fileName) => fileName.replace(/\.prompt\.md$/u, '.md'));
+    const targetFiles = promptFiles.map((fileName) =>
+      fileName.replace(/\.prompt\.md$/u, '.md'),
+    );
     for (const [index, targetFile] of targetFiles.entries()) {
       fs.copyFileSync(
         path.join(source, promptFiles[index] as string),

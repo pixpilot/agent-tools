@@ -60,32 +60,32 @@ portable configs directory                                  -> /coding-agent-san
 
 ## CLI options
 
-| Option                    | Description                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------ |
-| `--agent <agent>`         | `claude`, `codex` or `copilot`                                                       |
-| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                |
-| `--task <name>`           | Task name; drives the branch and worktree names                                      |
-| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, and rules          |
-| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                         |
-| `--worktree <path>`       | Override the worktree location                                                       |
-| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                 |
-| `--image <tag>`           | Use an existing image instead of building the bundled one                            |
-| `--agent-args <args>`     | Trusted shell text appended to the agent command                                     |
-| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                             |
-| `--no-install`            | Skip project dependency installation                                                 |
-| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                              |
-| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                        |
-| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                     |
-| `--rebuild-image`         | Rebuild the shared development image                                                 |
-| `--login`                 | Force the agent login flow before launching                                          |
-| `--dry-run`               | Preview Docker arguments with environment values omitted                             |
-| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                  |
-| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                           |
-| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                      |
-| `--memory <size>`         | Limit container memory (unconstrained by default)                                    |
-| `--offline`               | Deprecated alias for `--network none`                                                |
-| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset              |
-| `--list-agents`           | List the supported agents and exit                                                   |
+| Option                    | Description                                                                 |
+| ------------------------- | --------------------------------------------------------------------------- |
+| `--agent <agent>`         | `claude`, `codex` or `copilot`                                              |
+| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)       |
+| `--task <name>`           | Task name; drives the branch and worktree names                             |
+| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, and rules |
+| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                |
+| `--worktree <path>`       | Override the worktree location                                              |
+| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)        |
+| `--image <tag>`           | Use an existing image instead of building the bundled one                   |
+| `--agent-args <args>`     | Trusted shell text appended to the agent command                            |
+| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                    |
+| `--no-install`            | Skip project dependency installation                                        |
+| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                     |
+| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)               |
+| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                            |
+| `--rebuild-image`         | Rebuild the shared development image                                        |
+| `--login`                 | Force the agent login flow before launching                                 |
+| `--dry-run`               | Preview Docker arguments with environment values omitted                    |
+| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                         |
+| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                  |
+| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                             |
+| `--memory <size>`         | Limit container memory (unconstrained by default)                           |
+| `--offline`               | Deprecated alias for `--network none`                                       |
+| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset     |
+| `--list-agents`           | List the supported agents and exit                                          |
 
 ### Examples
 

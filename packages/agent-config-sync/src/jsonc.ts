@@ -24,9 +24,7 @@ function stripComments(contents: string): string {
       if (escaped) escaped = false;
       else if (current === '\\') escaped = true;
       else if (current === quote) quote = undefined;
-    }
-
-    else if (current === '"' || current === "'") {
+    } else if (current === '"' || current === "'") {
       quote = current;
       output += current;
     } else if (current === '/' && next === '/') {
@@ -34,7 +32,10 @@ function stripComments(contents: string): string {
       output += '\n';
     } else if (current === '/' && next === '*') {
       index += BLOCK_COMMENT_MARKER_LENGTH;
-      while (index < contents.length && !(contents[index] === '*' && contents[index + 1] === '/')) {
+      while (
+        index < contents.length &&
+        !(contents[index] === '*' && contents[index + 1] === '/')
+      ) {
         if (contents[index] === '\n') output += '\n';
         index += 1;
       }

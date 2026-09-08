@@ -14,7 +14,7 @@ configs/
 
 `mcp.jsonc` is a JSON/JSONC object keyed by server name:
 
-```jsonc
+```json
 {
   "filesystem": {
     "command": "npx",
