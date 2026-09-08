@@ -1,5 +1,26 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.4.0
+
+### Minor Changes
+
+- harden sandbox isolation and sync agent config
+- harden sandbox isolation and sync agent config
+- add the per-session egress proxy image
+- route sessions through a per-session egress proxy
+- replace --offline with a tri-state network mode
+- declare per-agent and per-environment egress hosts
+
+### Patch Changes
+
+- format
+- formatting
+- allow the repository's own Git remotes in strict mode
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @pixpilot/agent-config-sync@0.2.0
+
 ## 1.3.0
 
 ### Minor Changes
