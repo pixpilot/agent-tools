@@ -52,11 +52,11 @@ RUN mkdir -p \
     /cache/yarn \
     /workspace/node_modules \
     /agent-state \
-    /coding-agent-sandbox/skills \
-    /coding-agent-sandbox/work \
+    /coding-agent-sandbox/configs \
   && chown -R node:node /home/node /cache /workspace /agent-state /coding-agent-sandbox
 
 COPY --chown=node:node entrypoint.sh /usr/local/bin/sandbox-entrypoint
+COPY --chown=node:node agent-config-sync /opt/agent-config-sync
 # Strip CR in case the script was checked out or packed on a Windows host.
 RUN sed -i 's/\r$//' /usr/local/bin/sandbox-entrypoint \
   && chmod 0755 /usr/local/bin/sandbox-entrypoint

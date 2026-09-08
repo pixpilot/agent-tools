@@ -38,7 +38,7 @@ export function resolveCliOptions(raw: RawCliOptions): SandboxOptions {
     task,
     fullAccess: raw.fullAccess ?? true,
     install: raw.install ?? true,
-    skills: raw.skills ?? true,
+    configs: raw.configs ?? true,
     gitMount: raw.gitMount ?? true,
     updateAgent: raw.updateAgent ?? false,
     rebuildImage: raw.rebuildImage ?? false,

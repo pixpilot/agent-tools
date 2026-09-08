@@ -25,7 +25,7 @@ export class CodexAgent extends AgentAdapter {
     );
   }
 
-  // Codex reads ~/.codex/AGENTS.md, which the sync utility writes directly.
+  // Codex reads ~/.codex/AGENTS.md, which the config synchronizer writes directly.
   override postSyncCommand(): string {
     return [
       'mkdir -p "$HOME/.agents/skills" "$HOME/.codex"',

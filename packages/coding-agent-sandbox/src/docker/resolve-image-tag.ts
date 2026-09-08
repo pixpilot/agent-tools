@@ -30,14 +30,23 @@ function hashContext(
   contextDirectory: string,
   include: (file: string) => boolean,
 ): string {
-  const files = fs
-    .readdirSync(contextDirectory)
-    .filter(include)
-    .sort()
-    .map(
-      (file) => `${file}:${fs.readFileSync(path.join(contextDirectory, file), 'utf-8')}`,
-    )
+  const files = collectContextFiles(contextDirectory)
+    .filter((file) => include(file.split('/')[0] as string))
+    .map((file) => `${file}:${fs.readFileSync(path.join(contextDirectory, file), 'utf-8')}`)
     .join('\n');
 
   return shortHash(files, TAG_HASH_LENGTH);
+}
+
+/** Collects build-context files recursively so bundled tools update the image tag. */
+function collectContextFiles(directory: string, prefix = ''): string[] {
+  return fs
+    .readdirSync(directory, { withFileTypes: true })
+    .flatMap((entry) => {
+      const relativePath = `${prefix}${entry.name}`;
+      return entry.isDirectory()
+        ? collectContextFiles(path.join(directory, entry.name), `${relativePath}/`)
+        : [relativePath];
+    })
+    .sort();
 }

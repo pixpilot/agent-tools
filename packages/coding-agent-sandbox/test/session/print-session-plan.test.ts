@@ -16,7 +16,7 @@ describe('printSessionPlan', () => {
       worktreePath: '/worktree',
       gitDirPath: '/repo/.git',
       mountGit: false,
-      skillsPath: '/skills',
+      configsPath: '/configs',
       volumes: [],
       tty: false,
       network: 'strict',

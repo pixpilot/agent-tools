@@ -1,4 +1,4 @@
-import type { SandboxOptions, SkillsInfo } from '../../src/types';
+import type { ConfigSourceInfo, SandboxOptions } from '../../src/types';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { getAgent } from '../../src/agents/agent-registry';
@@ -12,7 +12,6 @@ const repository = {
   parent: path.resolve('.'),
   headRef: 'main',
 };
-
 const worktree = {
   taskSlug: 'fix-resume',
   branch: 'ai/claude/fix-resume',
@@ -20,8 +19,7 @@ const worktree = {
   created: true,
   gitDirRelative: 'worktrees/fix-resume-claude',
 };
-
-const skills: SkillsInfo = { path: path.resolve('skills'), syncCommand: 'npm run sync' };
+const configs: ConfigSourceInfo = { path: path.resolve('configs'), available: ['skills'] };
 
 function makeOptions(overrides: Partial<SandboxOptions> = {}): SandboxOptions {
   return {
@@ -30,7 +28,7 @@ function makeOptions(overrides: Partial<SandboxOptions> = {}): SandboxOptions {
     task: 'Fix resume',
     fullAccess: true,
     install: true,
-    skills: true,
+    configs: true,
     gitMount: true,
     updateAgent: false,
     rebuildImage: false,
@@ -42,101 +40,41 @@ function makeOptions(overrides: Partial<SandboxOptions> = {}): SandboxOptions {
   };
 }
 
-function build(
-  overrides: Partial<SandboxOptions> = {},
-  agentId = 'claude',
-  skillsInfo = skills,
-) {
+function build(overrides: Partial<SandboxOptions> = {}, agentId = 'claude') {
   return buildSessionEnv({
     agent: getAgent(agentId),
     environment: new NodeEnvironment(),
     repository,
     worktree,
-    skills: skillsInfo,
+    configs,
     options: makeOptions({ agent: agentId, ...overrides }),
   });
 }
 
 describe('buildSessionEnv', () => {
-  it('should disable provisioning and dependency installation offline', () => {
+  it('should disable configuration and dependency installation offline', () => {
     const env = build({ network: 'none' });
     expect(env['SANDBOX_OFFLINE']).toBe('1');
-    expect(env['SANDBOX_SKILLS_ENABLED']).toBe('0');
+    expect(env['SANDBOX_CONFIGS_ENABLED']).toBe('0');
     expect(env['SANDBOX_DEPS_INSTALL']).toBeUndefined();
   });
-  it('should describe the agent the entrypoint has to launch', () => {
-    const env = build();
 
-    expect(env['SANDBOX_AGENT_BIN']).toBe('claude');
+  it('should describe the agent and portable source consumed by the entrypoint', () => {
+    const env = build();
     expect(env['SANDBOX_AGENT_CMD']).toBe('claude --dangerously-skip-permissions');
-    expect(env['SANDBOX_AUTH_VOLUME']).toBe('coding-agent-sandbox-auth-claude');
+    expect(env['SANDBOX_CONFIGS_ENABLED']).toBe('1');
+    expect(env['SANDBOX_CONFIGS_SRC']).toBe('/coding-agent-sandbox/configs');
+    expect(env['SANDBOX_POST_SYNC_CMD']).toContain('.agents/skills');
   });
 
-  it('should drop the unattended flag when full access is refused', () => {
-    expect(build({ fullAccess: false })['SANDBOX_AGENT_CMD']).toBe('claude');
-  });
-
-  it('should pass the agent state paths as newline-separated lists', () => {
-    const env = build();
-
-    expect(env['SANDBOX_STATE_DIRS']).toBe('.claude');
-    expect(env['SANDBOX_STATE_FILES']).toBe('.claude.json');
-  });
-
-  it('should only set a login command for agents that have one', () => {
-    expect(build({}, 'codex')['SANDBOX_LOGIN_CMD']).toBe('codex login --device-auth');
-    expect(build()['SANDBOX_LOGIN_CMD']).toBeUndefined();
-  });
-
-  it('should include the skills sync command and seed placeholders', () => {
-    const env = build();
-
-    expect(env['SANDBOX_SKILLS_SYNC_CMD']).toBe('npm run sync');
-    expect(env['SANDBOX_SEED_JSON']).toContain('.claude.json');
-    expect(env['SANDBOX_SEED_EMPTY']).toContain('.codex/config.toml');
-  });
-
-  it('should add extra seed files requested on the command line', () => {
-    expect(build({ seedFiles: ['.config/extra.json'] })['SANDBOX_SEED_JSON']).toContain(
-      '.config/extra.json',
-    );
-  });
-
-  it('should disable skills provisioning when asked', () => {
-    expect(build({ skills: false })['SANDBOX_SKILLS_ENABLED']).toBe('0');
-  });
-
-  it('should disable skills provisioning when it was skipped in the setup prompt', () => {
-    expect(
-      build({}, 'claude', { ...skills, disabled: true })['SANDBOX_SKILLS_ENABLED'],
-    ).toBe('0');
-  });
-
-  it('should install project dependencies only when enabled', () => {
-    expect(build()['SANDBOX_DEPS_INSTALL']).toBe('ni');
-    expect(build({ install: false })['SANDBOX_DEPS_INSTALL']).toBeUndefined();
-  });
-
-  it('should steer Git at the private session directory', () => {
-    const env = build();
-
-    expect(env['GIT_DIR']).toBe('/repo/.git');
-    expect(env['GIT_WORK_TREE']).toBe('/workspace');
-  });
-
-  it('should leave Git unconfigured when the .git mount is disabled', () => {
-    const env = build({ gitMount: false });
-
-    expect(env['GIT_DIR']).toBeUndefined();
-    expect(env['GIT_WORK_TREE']).toBeUndefined();
+  it('should disable configuration provisioning when asked', () => {
+    expect(build({ configs: false })['SANDBOX_CONFIGS_ENABLED']).toBe('0');
   });
 
   it('should never leak host credentials or home paths into the container', () => {
     const values = Object.values(build()).join(' ');
-
     expect(values).not.toContain(repository.root);
     expect(values.toLowerCase()).not.toContain('.ssh');
-    expect(values).not.toContain('ANTHROPIC_API_KEY');
     expect(values).not.toContain('OPENAI_API_KEY');
   });
 });

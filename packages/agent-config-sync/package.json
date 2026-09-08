@@ -18,6 +18,9 @@
   "keywords": [],
   "sideEffects": false,
   "exports": "./src/index.ts",
+  "bin": {
+    "agent-config-sync": "./dist/cli.js"
+  },
   "files": [
     "dist"
   ],

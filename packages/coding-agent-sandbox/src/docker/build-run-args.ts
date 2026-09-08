@@ -1,7 +1,7 @@
 import type { SessionPlan } from '../types';
 import {
+  CONTAINER_CONFIGS_SRC,
   CONTAINER_GIT_DIR,
-  CONTAINER_SKILLS_SRC,
   CONTAINER_WORKSPACE,
 } from '../constants';
 import { toMountSource } from '../utils/normalize-path';
@@ -69,8 +69,8 @@ export function buildRunArgs(plan: SessionPlan): string[] {
     );
   }
 
-  if (plan.env['SANDBOX_SKILLS_ENABLED'] !== '0') {
-    args.push('-v', `${toMountSource(plan.skillsPath)}:${CONTAINER_SKILLS_SRC}:ro`);
+  if (plan.env['SANDBOX_CONFIGS_ENABLED'] !== '0') {
+    args.push('-v', `${toMountSource(plan.configsPath)}:${CONTAINER_CONFIGS_SRC}:ro`);
   }
 
   for (const volume of plan.volumes) {

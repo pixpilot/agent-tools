@@ -2,7 +2,7 @@ import type { NetworkMode } from '../network/network-mode';
 import type { RawCliOptions } from './resolve-cli-options';
 import { confirm, input, select } from '@inquirer/prompts';
 import { listAgents } from '../agents/agent-registry';
-import { DEFAULT_AGENT, DEFAULT_SKILLS_DIR } from '../constants';
+import { DEFAULT_AGENT } from '../constants';
 import { DEFAULT_NETWORK_MODE } from '../network/network-mode';
 import { detectDefaultRepo } from './detect-default-repo';
 
@@ -47,7 +47,6 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
   }
 
   const network: NetworkMode = action;
-  const offline = network === 'none';
 
   const agent =
     initial.agent ??
@@ -79,20 +78,6 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
           required: true,
         });
 
-  // Skills are provisioned over the network, so an offline session never uses them.
-  const requestedSkillsDir = initial.skillsDir?.trim();
-  let skillsDir: string | undefined;
-  if (!offline && initial.skills !== false) {
-    skillsDir =
-      requestedSkillsDir != null && requestedSkillsDir !== ''
-        ? requestedSkillsDir
-        : await input({
-            message: 'Centralized skills/prompts directory',
-            default: DEFAULT_SKILLS_DIR,
-            required: true,
-          });
-  }
-
   const fullAccess =
     initial.fullAccess ??
     (await confirm({
@@ -120,7 +105,7 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
 
   return {
     action: 'session',
-    options: { ...initial, agent, repo, task, skillsDir, fullAccess, gitMount, network },
+    options: { ...initial, agent, repo, task, fullAccess, gitMount, network },
   };
 }
 

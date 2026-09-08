@@ -6,7 +6,7 @@ The main checkout is never mounted. Each agent gets its own branch, its own work
 
 ## Quick start
 
-Run it with no arguments for the guided setup — it asks what to do, then for the agent, repository, task, skills directory and permissions:
+Run it with no arguments for the guided setup — it asks what to do, then for the agent, repository, task and permissions:
 
 ```sh
 npx @pixpilot/coding-agent-sandbox@latest
@@ -30,7 +30,6 @@ A bare invocation asks, in order:
 | Which coding agent should run this task?    | Claude Code                                                                    |
 | Main Git repository path                    | The repository containing the current directory                                |
 | Task name                                   | _(required)_                                                                   |
-| Centralized skills/prompts directory        | `%USERPROFILE%\.coding-agent-sandbox\skills` — skipped without a network       |
 | Let the agent act without approval prompts? | Yes                                                                            |
 | Enable isolated Git history and commits?    | Yes                                                                            |
 
@@ -44,7 +43,7 @@ The guided setup needs a terminal. Without one, use `--yes --task` and any other
 4. Refuses to start if another sandbox container is already using that worktree.
 5. Builds the shared development image once, then reuses it.
 6. Mounts the worktree read/write at `/workspace` and private session Git metadata.
-7. Provisions your skills/prompts by running the skills repository's **own** sync utility.
+7. Provisions skills, prompts, MCP servers and global rules with the bundled cross-platform synchronizer.
 8. Installs project dependencies with [`@antfu/ni`](https://github.com/antfu-collective/ni).
 9. Launches the agent interactively and hands you the terminal.
 
@@ -56,7 +55,7 @@ The exit summary includes short Git status and separate staged/unstaged diff sta
 Z:\github\roleclick                                        main checkout (never mounted)
 Z:\github\roleclick.worktrees\fix-resume-generation-claude  -> /workspace  (read/write)
 Z:\github\roleclick.worktrees\fix-resume-generation-codex   -> /workspace  (a second session)
-%USERPROFILE%\.coding-agent-sandbox\skills                    -> /coding-agent-sandbox/skills (read-only)
+portable configs directory                                  -> /coding-agent-sandbox/configs (read-only)
 ```
 
 ## CLI options
@@ -66,17 +65,15 @@ Z:\github\roleclick.worktrees\fix-resume-generation-codex   -> /workspace  (a se
 | `--agent <agent>`         | `claude`, `codex` or `copilot`                                                       |
 | `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                |
 | `--task <name>`           | Task name; drives the branch and worktree names                                      |
-| `--skills-dir <path>`     | Centralized skills directory (default: `%USERPROFILE%\.coding-agent-sandbox\skills`) |
-| `--skills-repo <url>`     | Repository to clone when setting up skills                                           |
+| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, and rules          |
 | `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                         |
 | `--worktree <path>`       | Override the worktree location                                                       |
 | `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                 |
 | `--image <tag>`           | Use an existing image instead of building the bundled one                            |
 | `--agent-args <args>`     | Trusted shell text appended to the agent command                                     |
-| `--seed-files <path...>`  | Extra home-relative placeholder files created before the skills sync                 |
 | `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                             |
 | `--no-install`            | Skip project dependency installation                                                 |
-| `--no-skills`             | Skip skills/prompts provisioning                                                     |
+| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                              |
 | `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                        |
 | `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                     |
 | `--rebuild-image`         | Rebuild the shared development image                                                 |
@@ -119,36 +116,13 @@ npx @pixpilot/coding-agent-sandbox --agent claude --task "fix resume generation"
 
 If the worktree already exists it is **reused**, never recreated. Before reuse it is checked against `git worktree list` and its branch is verified. A directory that exists but is not a registered worktree of the repository aborts the run rather than being overwritten.
 
-## Skills and prompts
+## Configuration provisioning
 
-The centralized skills repository is mounted **read-only** at `/coding-agent-sandbox/skills`. Inside the container it is copied to a writable location and the repository's **existing** sync utility is run — `npm run sync` when the repository defines that script, otherwise a root `sync.js`/`sync.mjs`/`sync.cjs`/`sync.ts`.
+The sandbox never executes a script from your configuration directory. Pass `--configs-dir <path>` to mount portable assets read-only; a missing supplied path is an error. If that directory is incomplete, the interactive CLI offers the selected agent’s default config for missing assets or uses only what is present.
 
-If the canonical directory is missing you are asked what to do:
+Without `--configs-dir`, the selected agent’s skills, prompts, MCP servers and global instructions are copied into a temporary portable snapshot. Credentials, agent state, and MCP token-like values are excluded. The snapshot is removed when the session exits.
 
-```text
-Canonical skills directory not found:
-%USERPROFILE%\.coding-agent-sandbox\skills
-
-How would you like to continue?
-
-> Use another skills directory
-  Continue without skills or prompts
-  Cancel
-```
-
-Pass `--skills-repo <url>` to add a “clone the requested skills repository” option.
-
-Provisioning **fails closed**: if the mount, the sync utility or the post-sync setup fails, the agent is never launched.
-Choose “Continue without skills or prompts” to launch that session without mounting or syncing them; it is the interactive equivalent of `--no-skills`.
-
-### Host-path shims
-
-Sync utilities are usually written for a Windows host and hard-code paths like `C:\Users\<you>\.claude`. Two shims let them run unchanged in Linux without touching the canonical copy:
-
-- **Profile redirect** — `<Drive>:/Users/<host user>` inside the work directory is symlinked to the container home, so host profile writes land in the right place.
-- **Placeholder seeding** — sync utilities that merge into existing config files refuse to run when those files are missing. Empty `~/.claude.json`, `~/.codex/config.toml` and `~/AppData/Roaming/Code/User/mcp.json` placeholders are created first. Add more with `--seed-files`.
-
-Anything a sync utility still writes to a Windows-shaped path is re-homed into the container home afterwards. No host file is ever read, copied or modified.
+Configuration is applied with the bundled `@pixpilot/agent-config-sync` CLI, using centrally defined Windows, macOS, and Linux targets. Provisioning fails closed; use `--no-configs` to opt out.
 
 ## Authentication
 
@@ -239,8 +213,8 @@ credential volume is still mounted and readable by the agent process.
 If something fails only under `strict`, rerun with `--network open` when you
 trust the operation, then read the printed hostnames to decide what to allow.
 
-`--network none` also runs with `--pull never` and skips skills
-discovery/cloning/sync, dependency installs, CLI installs/updates and
+`--network none` also runs with `--pull never` and skips configuration
+sync, dependency installs, CLI installs/updates and
 authentication. A local image and installed CLI are required; prepare them with a
 network first, or select a cached `--image`. It rejects `--login`,
 `--update-agent` and `--rebuild-image`. Cloud-backed agents cannot make model
@@ -292,14 +266,14 @@ Commit identity is passed as `GIT_AUTHOR_*`/`GIT_COMMITTER_*` environment variab
 - An existing worktree is never recreated, overwritten or reset.
 - Nothing is ever merged, and no branch or worktree is ever deleted — including after a crash or Ctrl+C.
 - Two active agent containers can never share a worktree.
-- Skills provisioning fails closed; the agent is not launched on failure.
+- Configuration provisioning fails closed; the agent is not launched on failure.
 - The Docker socket is never exposed, and no unrelated host directory is mounted.
-- The centralized skills source is read-only for the whole session.
+- The portable configuration source is read-only for the whole session.
 - Container cleanup only removes containers carrying this CLI's label, and reports failures instead of escalating — it can never delete host source code.
 
 ## Adding an agent
 
-Adapter commands and the skills sync utility execute trusted shell code inside the container. `--agent-args` is also raw shell text: quotes, substitutions and shell operators are evaluated. Never populate it from task names, repository content or agent output. Keep repository paths and task names in separate environment values or process arguments, not interpolated into commands. Only use skills repositories you trust; their sync code has access to the session's mounts and persistent credentials.
+Adapter commands and `--agent-args` are trusted shell code inside the container. Do not populate them from task names, repository content or agent output. The configuration directory is treated as data and no source script is executed.
 
 Agents are adapters. Subclass `AgentAdapter`, then add it to the registry:
 
@@ -343,7 +317,7 @@ const exitCode = await runSandbox({
   task: 'fix resume generation',
   fullAccess: true,
   install: true,
-  skills: true,
+  configs: true,
   gitMount: true,
   updateAgent: false,
   rebuildImage: false,

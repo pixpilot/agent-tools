@@ -9,6 +9,7 @@ export {
   getAgent,
   listAgents,
 } from './agents/index';
+export { resolveConfigSource } from './configs/index';
 export * from './constants';
 export {
   buildRunArgs,
@@ -39,11 +40,5 @@ export {
   usesProxy,
 } from './network/index';
 export { ensureWorktreeSourceIsClean, runSandbox } from './session/index';
-export {
-  cloneSkillsRepository,
-  partitionSeedFiles,
-  resolveSkillsDirectory,
-  validateSkillsDirectory,
-} from './skills/index';
 export type * from './types';
 export { slugify } from './utils/slugify';

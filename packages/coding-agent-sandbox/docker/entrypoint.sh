@@ -11,8 +11,7 @@ die() { printf '\n%s[31mx %s%s[0m\n' "$ESC" "$1" "$ESC" >&2; exit 1; }
 
 STATE_ROOT="${SANDBOX_STATE_ROOT:-/agent-state}"
 AGENT_LABEL="${SANDBOX_AGENT_LABEL:-coding agent}"
-SRC="${SANDBOX_SKILLS_SRC:-/coding-agent-sandbox/skills}"
-WORK="${SANDBOX_SKILLS_WORK:-/coding-agent-sandbox/work}"
+SRC="${SANDBOX_CONFIGS_SRC:-/coding-agent-sandbox/configs}"
 
 # The bind-mounted worktree belongs to the host user, not to `node`.
 git config --global --add safe.directory /workspace >/dev/null 2>&1 || true
@@ -71,83 +70,20 @@ elif [ -n "${SANDBOX_AGENT_INSTALL:-}" ]; then
   fi
 fi
 
-# --- 3. Shared skills and prompts -------------------------------------------
-# Sync utilities are written for the Windows host, so two shims make them run
-# unchanged here: placeholder config files they expect to already exist, and a
-# "<Drive>:/Users/<host user>" symlink tree that redirects host profile paths
-# into the container home.
-seed_file() {
-  local rel="$1" contents="$2" dst="$HOME/$1"
-  [ -s "$dst" ] && return 0
-  mkdir -p "$(dirname "$dst")" || return 1
-  printf '%s' "$contents" >"$dst"
-}
-
-seed_placeholders() {
-  local rel
-  while IFS= read -r rel; do
-    [ -n "$rel" ] || continue
-    seed_file "$rel" '{}' || return 1
-  done <<<"${SANDBOX_SEED_JSON:-}"
-
-  while IFS= read -r rel; do
-    [ -n "$rel" ] || continue
-    seed_file "$rel" '' || return 1
-  done <<<"${SANDBOX_SEED_EMPTY:-}"
-
-  return 0
-}
-
-link_windows_profile() {
-  local user="${SANDBOX_HOST_USER:-}" letter
-  [ -n "$user" ] || return 0
-  for letter in {A..Z}; do
-    mkdir -p "$WORK/$letter:/Users" || return 1
-    ln -sfn "$HOME" "$WORK/$letter:/Users/$user" || return 1
-  done
-  return 0
-}
-
-# Catches sync utilities that wrote to a profile the shim did not cover.
-rehome_windows_profile_paths() {
-  local drive profile
-  shopt -s nullglob
-  for drive in "$WORK"/?:; do
-    [ -d "$drive" ] || continue
-    for profile in "$drive"/Users/*; do
-      # Shimmed profiles already point at $HOME - copying them would recurse.
-      [ -L "$profile" ] && continue
-      [ -d "$profile" ] || continue
-      cp -a "$profile/." "$HOME/" || return 1
-    done
-    rm -rf "$drive"
-  done
-  shopt -u nullglob
-  return 0
-}
-
-if [ "${SANDBOX_OFFLINE:-0}" != "1" ] && [ "${SANDBOX_SKILLS_ENABLED:-1}" = "1" ]; then
-  step "Provisioning shared skills and prompts"
-  [ -d "$SRC" ] || die "Skills source is not mounted at $SRC"
-  rm -rf "$WORK" && mkdir -p "$WORK" || die "Could not prepare the skills work directory"
-  cp -a "$SRC/." "$WORK/" || die "Could not copy the skills repository into $WORK"
-  seed_placeholders || die "Could not seed placeholder configuration files"
-  link_windows_profile || die "Could not prepare host profile path shims"
-  cd "$WORK" || die "Could not enter $WORK"
-  if [ -f package.json ] && [ ! -d node_modules ]; then
-    note "Installing skills repository dependencies"
-    npm install --ignore-scripts --no-audit --no-fund --loglevel=error \
-      || die "Skills repository dependencies failed to install"
-  fi
-  eval "${SANDBOX_SKILLS_SYNC_CMD:-node sync.js}" \
-    || die "The skills sync utility failed - refusing to launch $AGENT_LABEL"
-  rehome_windows_profile_paths || die "Could not re-home synced configuration into $HOME"
-  cd /workspace || die "Could not enter /workspace"
+# --- 3. Portable agent configuration ---------------------------------------
+if [ "${SANDBOX_OFFLINE:-0}" != "1" ] && [ "${SANDBOX_CONFIGS_ENABLED:-1}" = "1" ]; then
+  step "Provisioning agent configuration"
+  [ -d "$SRC" ] || die "Configuration source is not mounted at $SRC"
+  node /opt/agent-config-sync/cli.js \
+    --configs-dir "$SRC" \
+    --home-dir "$HOME" \
+    --agent "${SANDBOX_AGENT_ID:?SANDBOX_AGENT_ID is required}" \
+    || die "Configuration sync failed - refusing to launch $AGENT_LABEL"
   if [ -n "${SANDBOX_POST_SYNC_CMD:-}" ]; then
     eval "$SANDBOX_POST_SYNC_CMD" || die "Post-sync setup for $AGENT_LABEL failed"
   fi
 else
-  warn "Skills provisioning is disabled for this session"
+  warn "Configuration provisioning is disabled for this session"
 fi
 
 # --- 4. Project dependencies -------------------------------------------------

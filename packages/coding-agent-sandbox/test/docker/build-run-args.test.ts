@@ -14,7 +14,7 @@ function makePlan(overrides: Partial<SessionPlan> = {}): SessionPlan {
     gitDirPath: path.resolve('repo/.git'),
     gitPointerPath: path.resolve('sandbox/workspace.git'),
     mountGit: true,
-    skillsPath: path.resolve('skills'),
+    configsPath: path.resolve('configs'),
     volumes: [{ name: 'coding-agent-sandbox-auth-claude', target: '/agent-state' }],
     env: { SANDBOX_AGENT_ID: 'claude' },
     tty: true,
@@ -75,9 +75,9 @@ describe('buildRunArgs', () => {
     expect(args[args.indexOf('--memory') + 1]).toBe('4g');
   });
 
-  it('should not mount the skills source when provisioning is disabled', () => {
-    const args = buildRunArgs(makePlan({ env: { SANDBOX_SKILLS_ENABLED: '0' } }));
-    expect(mountFor(args, '/coding-agent-sandbox/skills')).toBeUndefined();
+  it('should not mount the config source when provisioning is disabled', () => {
+    const args = buildRunArgs(makePlan({ env: { SANDBOX_CONFIGS_ENABLED: '0' } }));
+    expect(mountFor(args, '/coding-agent-sandbox/configs')).toBeUndefined();
   });
   it('should mount the worktree read/write at /workspace', () => {
     const args = buildRunArgs(makePlan());
@@ -87,10 +87,10 @@ describe('buildRunArgs', () => {
     );
   });
 
-  it('should mount the skills directory read-only', () => {
+  it('should mount the config source read-only', () => {
     const args = buildRunArgs(makePlan());
 
-    expect(args).toContain(`${path.resolve('skills')}:/coding-agent-sandbox/skills:ro`);
+    expect(args).toContain(`${path.resolve('configs')}:/coding-agent-sandbox/configs:ro`);
   });
 
   it('should never mount the main checkout, the Docker socket or the host home', () => {

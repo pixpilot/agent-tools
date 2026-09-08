@@ -1,6 +1,5 @@
 import { Command } from 'commander';
 import { listAgents } from '../agents/agent-registry';
-import { DEFAULT_SKILLS_DIR } from '../constants';
 import { NETWORK_MODES, parseNetworkMode } from '../network/network-mode';
 import { parseBoolean } from './parse-boolean';
 
@@ -23,19 +22,14 @@ export function createProgram(version: string): Command {
     )
     .option('--task <name>', 'Task name, used for the branch and worktree')
     .option(
-      '--skills-dir <path>',
-      `Centralized skills directory (default: ${DEFAULT_SKILLS_DIR})`,
+      '--configs-dir <path>',
+      'Portable directory containing skills, prompts, MCP servers and global rules',
     )
-    .option('--skills-repo <url>', 'Repository to clone when setting up skills')
     .option('--branch <name>', 'Override the ai/<agent>/<task> branch name')
     .option('--worktree <path>', 'Override the worktree location')
     .option('--base <ref>', 'Base ref for a newly created branch')
     .option('--image <tag>', 'Use an existing image instead of the bundled one')
     .option('--agent-args <args>', 'Trusted shell text appended to the agent command')
-    .option(
-      '--seed-files <path...>',
-      'Extra home-relative placeholder files created before the skills sync',
-    )
     .option(
       '--full-access <boolean>',
       'Let the agent act without approval prompts',
@@ -55,7 +49,7 @@ export function createProgram(version: string): Command {
     .option('--cpus <count>', 'Limit container CPUs (unconstrained by default)')
     .option('--memory <size>', 'Limit container memory (unconstrained by default)')
     .option('--offline', 'Deprecated alias for --network none')
-    .option('--no-skills', 'Skip skills/prompts provisioning')
+    .option('--no-configs', 'Skip skills, prompts, MCP and global-rules provisioning')
     .option('--no-git-mount', 'Disable isolated Git support inside the container')
     .option('--update-agent', 'Reinstall/upgrade the agent CLI in the container')
     .option('--rebuild-image', 'Rebuild the shared development image')

@@ -1,23 +1,25 @@
 import type { AgentAdapter } from '../agents/agent-adapter';
 import type { EnvironmentAdapter } from '../environments/environment-adapter';
-import type { RepositoryInfo, SandboxOptions, SkillsInfo, WorktreeInfo } from '../types';
-import os from 'node:os';
+import type {
+  ConfigSourceInfo,
+  RepositoryInfo,
+  SandboxOptions,
+  WorktreeInfo,
+} from '../types';
 import {
+  CONTAINER_CONFIGS_SRC,
   CONTAINER_GIT_DIR,
-  CONTAINER_SKILLS_SRC,
-  CONTAINER_SKILLS_WORK,
   CONTAINER_STATE_ROOT,
   CONTAINER_WORKSPACE,
 } from '../constants';
 import { getGitIdentity } from '../git/get-git-status';
-import { partitionSeedFiles } from '../skills/seed-files';
 
 export interface SessionEnvInputs {
   agent: AgentAdapter;
   environment: EnvironmentAdapter | undefined;
   repository: RepositoryInfo;
   worktree: WorktreeInfo;
-  skills: SkillsInfo;
+  configs: ConfigSourceInfo;
   options: SandboxOptions;
 }
 
@@ -29,9 +31,8 @@ export interface SessionEnvInputs {
  */
 export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string> {
   const { agent, environment, repository, worktree, options } = inputs;
-  const seeds = partitionSeedFiles(options.seedFiles ?? []);
-  // `none` is the only mode without a network, so it is the only one that has
-  // to skip the skills sync, the dependency install and the login.
+  // `none` is the only mode without a network, so it skips configuration,
+  // dependency installation and login.
   const offline = options.network === 'none';
 
   const env: Record<string, string> = {
@@ -52,15 +53,9 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
     SANDBOX_AUTH_HINT: agent.auth.hint,
     SANDBOX_AUTH_VOLUME: agent.authVolume,
     SANDBOX_FORCE_LOGIN: options.login ? '1' : '0',
-    SANDBOX_SKILLS_ENABLED:
-      options.skills && !inputs.skills.disabled && !offline ? '1' : '0',
-    SANDBOX_SKILLS_SRC: CONTAINER_SKILLS_SRC,
-    SANDBOX_SKILLS_WORK: CONTAINER_SKILLS_WORK,
-    SANDBOX_SKILLS_SYNC_CMD: inputs.skills.syncCommand,
+    SANDBOX_CONFIGS_ENABLED: options.configs && !offline ? '1' : '0',
+    SANDBOX_CONFIGS_SRC: CONTAINER_CONFIGS_SRC,
     SANDBOX_POST_SYNC_CMD: agent.postSyncCommand(),
-    SANDBOX_SEED_JSON: seeds.json.join('\n'),
-    SANDBOX_SEED_EMPTY: seeds.empty.join('\n'),
-    SANDBOX_HOST_USER: hostUser(),
     SANDBOX_TASK: worktree.taskSlug,
     SANDBOX_BRANCH: worktree.branch,
   };
@@ -94,13 +89,4 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
   }
 
   return env;
-}
-
-/** Host account name, used to shim `<Drive>:/Users/<name>` paths into $HOME. */
-function hostUser(): string {
-  try {
-    return os.userInfo().username;
-  } catch {
-    return '';
-  }
 }

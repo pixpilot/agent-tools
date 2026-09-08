@@ -31,7 +31,7 @@ export abstract class AgentAdapter {
   /** Shell command that launches the agent interactively in `/workspace`. */
   abstract launchCommand(options: AgentLaunchOptions): string;
 
-  /** Shell command run after the skills sync, e.g. to link synced skills. */
+  /** Shell command run after config sync, e.g. to link the shared skills directory. */
   postSyncCommand(): string {
     return '';
   }

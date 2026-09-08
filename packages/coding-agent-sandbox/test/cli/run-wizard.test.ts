@@ -53,7 +53,7 @@ describe('runWizard', () => {
   it('should collect a full strict session', async () => {
     queue({
       select: ['strict', 'codex', true],
-      input: ['/work/app', 'fix login', '/skills'],
+      input: ['/work/app', 'fix login'],
       confirm: [false],
     });
 
@@ -63,7 +63,6 @@ describe('runWizard', () => {
         agent: 'codex',
         repo: '/work/app',
         task: 'fix login',
-        skillsDir: '/skills',
         fullAccess: false,
         gitMount: true,
         network: 'strict',
@@ -71,7 +70,7 @@ describe('runWizard', () => {
     });
   });
 
-  it('should skip the skills question when there is no network', async () => {
+  it('should not ask for a config directory when there is no network', async () => {
     queue({
       select: ['none', 'claude', false],
       input: ['/work/app', 'fix login'],
@@ -83,7 +82,6 @@ describe('runWizard', () => {
         agent: 'claude',
         repo: '/work/app',
         task: 'fix login',
-        skillsDir: undefined,
         fullAccess: true,
         gitMount: false,
         network: 'none',
@@ -93,7 +91,7 @@ describe('runWizard', () => {
   });
 
   it('should offer the detected repository as the default', async () => {
-    queue({ select: ['strict', 'claude', true], input: ['', 'fix login', '/skills'] });
+    queue({ select: ['strict', 'claude', true], input: ['', 'fix login'] });
 
     await runWizard();
 
@@ -104,14 +102,14 @@ describe('runWizard', () => {
     queue({ select: ['strict', true], input: ['fix login'], confirm: [false] });
 
     await expect(
-      runWizard({ agent: 'codex', repo: '/work/app', skillsDir: '/skills' }),
+      runWizard({ agent: 'codex', repo: '/work/app', configsDir: '/configs' }),
     ).resolves.toStrictEqual({
       action: 'session',
       options: {
         agent: 'codex',
         repo: '/work/app',
         task: 'fix login',
-        skillsDir: '/skills',
+        configsDir: '/configs',
         fullAccess: false,
         gitMount: true,
         network: 'strict',

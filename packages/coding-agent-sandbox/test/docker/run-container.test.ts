@@ -25,7 +25,7 @@ const plan: SessionPlan = {
   gitDirPath: '/repo/.git',
   gitPointerPath: '/sandbox/workspace.git',
   mountGit: true,
-  skillsPath: '/skills',
+  configsPath: '/configs',
   volumes: [],
   env: {},
   tty: true,

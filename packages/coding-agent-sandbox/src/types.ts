@@ -49,13 +49,12 @@ export interface WorktreeInfo extends WorktreePlan {
   gitDirRelative: string;
 }
 
-/** A validated canonical skills/prompts repository. */
-export interface SkillsInfo {
+/** A portable source of non-sensitive configuration assets. */
+export interface ConfigSourceInfo {
   path: string;
-  /** Command that runs the repository's own sync utility. */
-  syncCommand: string;
-  /** Skip mounting and syncing skills/prompts for this session. */
-  disabled?: boolean | undefined;
+  available: readonly string[];
+  /** Removes a temporary snapshot after the session ends. */
+  cleanup?: (() => void) | undefined;
 }
 
 /** A Docker volume or bind mount added to the session container. */
@@ -70,19 +69,16 @@ export interface SandboxOptions {
   agent: string;
   repo: string;
   task: string;
-  skillsDir?: string | undefined;
-  skillsRepo?: string | undefined;
+  configsDir?: string | undefined;
   branch?: string | undefined;
   worktree?: string | undefined;
   base?: string | undefined;
   image?: string | undefined;
   /** Trusted shell text, evaluated inside the container. */
   agentArgs?: string | undefined;
-  /** Extra home-relative placeholder files seeded before the skills sync. */
-  seedFiles?: readonly string[] | undefined;
   fullAccess: boolean;
   install: boolean;
-  skills: boolean;
+  configs: boolean;
   gitMount: boolean;
   updateAgent: boolean;
   rebuildImage: boolean;
@@ -119,7 +115,7 @@ export interface SessionPlan {
   gitPointerPath?: string | undefined;
   /** Mount isolated Git metadata so Git works inside the worktree. */
   mountGit: boolean;
-  skillsPath: string;
+  configsPath: string;
   volumes: VolumeMount[];
   env: Record<string, string>;
   /** Allocate a TTY; false when stdin is not a terminal. */

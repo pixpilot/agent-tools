@@ -58,6 +58,7 @@
   },
   "scripts": {
     "prepublishOnly": "pnpm run clean && pnpm run build",
+    "prebuild": "pnpm --filter @pixpilot/agent-config-sync build && node scripts/copy-agent-config-sync.mjs",
     "clean": "git clean -xdf .cache .turbo dist",
     "clean:all": "pnpm clean && git clean -xdf node_modules",
     "build": "tsdown",
@@ -70,10 +71,11 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path ../../.prettierignore",
-    "agent:start": "pnpm build && wt -d . pwsh -NoExit -Command node ./dist/cli.js"
+    "agent:start": "pnpm build && wt -d . pwsh -NoExit -Command node ./dist/cli.js --network open"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.9.0",
+    "@pixpilot/agent-config-sync": "workspace:*",
     "commander": "^14.0.1"
   },
   "devDependencies": {

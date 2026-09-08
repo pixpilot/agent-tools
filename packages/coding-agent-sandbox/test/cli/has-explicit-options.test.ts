@@ -13,6 +13,12 @@ function parse(argv: readonly string[]): boolean {
 }
 
 describe('hasExplicitOptions', () => {
+  it('should expose configs-dir and remove the legacy skills-dir option', () => {
+    const options = createProgram('0.0.0').options.map((option) => option.long);
+    expect(options).toContain('--configs-dir');
+    expect(options).not.toContain('--skills-dir');
+  });
+
   it('should report false for a bare invocation', () => {
     expect(parse([])).toBe(false);
   });
@@ -40,10 +46,10 @@ describe('hasExplicitOptions', () => {
   it('should return only options explicitly passed on the command line', () => {
     const program = createProgram('0.0.0');
     program.action(() => {});
-    program.parse(['node', 'cli', '--skills-dir', '/skills', '--no-git-mount']);
+    program.parse(['node', 'cli', '--configs-dir', '/configs', '--no-git-mount']);
 
     expect(getExplicitOptions(program)).toStrictEqual({
-      skillsDir: '/skills',
+      configsDir: '/configs',
       gitMount: false,
     });
   });

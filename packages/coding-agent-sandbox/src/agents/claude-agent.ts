@@ -31,7 +31,7 @@ export class ClaudeAgent extends AgentAdapter {
     );
   }
 
-  // The sync utility writes skills to ~/.agents/skills; Claude reads ~/.claude/skills.
+  // The config synchronizer writes shared skills to ~/.agents/skills.
   override postSyncCommand(): string {
     return [
       'mkdir -p "$HOME/.agents/skills" "$HOME/.claude"',
