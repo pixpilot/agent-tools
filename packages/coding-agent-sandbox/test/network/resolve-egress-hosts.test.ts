@@ -78,4 +78,13 @@ describe('resolveEgressHosts', () => {
     expect(hosts).toContain('registry.npmjs.org');
     expect(hosts.length).toBeGreaterThan(0);
   });
+
+  it('should reject an invalid user-supplied host before starting the proxy', () => {
+    expect(() =>
+      resolveEgressHosts({
+        agent: new ClaudeAgent(),
+        extraHosts: ['registry.npmjs.org.attacker.example:443'],
+      }),
+    ).toThrow(/Invalid egress host/u);
+  });
 });

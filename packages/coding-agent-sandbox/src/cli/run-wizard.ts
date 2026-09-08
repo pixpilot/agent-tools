@@ -104,11 +104,14 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
   const gitMount =
     initial.gitMount ??
     (await select({
-      message: 'Allow writes to shared Git metadata (refs, hooks and config)?',
+      message: 'Enable isolated Git history and commits inside the container?',
       choices: [
-        { name: 'Allow Git commits and history in the container', value: true },
         {
-          name: 'Withhold Git metadata (Git will not work in the container)',
+          name: 'Enable Git with private metadata (commits are imported on exit)',
+          value: true,
+        },
+        {
+          name: 'Disable Git inside the container',
           value: false,
         },
       ],

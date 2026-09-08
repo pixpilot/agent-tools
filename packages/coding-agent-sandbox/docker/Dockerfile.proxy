@@ -1,23 +1,8 @@
-# The per-session egress proxy. Built from Debian packages through this tool's
-# own build path rather than pulled from a third-party image, so the one
-# security-critical component adds no new supply-chain dependency.
-FROM debian:bookworm-slim
+# The proxy shares the already-trusted Node base image. Unlike a hostname-only
+# forward proxy, it pins each connection to a checked public IP address.
+FROM node:24.15-bookworm-slim
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    tinyproxy \
-  && rm -rf /var/lib/apt/lists/*
-
-COPY proxy-entrypoint.sh /usr/local/bin/sandbox-proxy-entrypoint
-# Strip CR in case the script was checked out or packed on a Windows host.
-RUN sed -i 's/\r$//' /usr/local/bin/sandbox-proxy-entrypoint \
-  && chmod 0755 /usr/local/bin/sandbox-proxy-entrypoint
-
-# 8888 is above 1024, so binding it needs no capability and the container can
-# run unprivileged with --cap-drop=ALL.
+COPY --chown=node:node proxy-server.mjs /usr/local/bin/sandbox-proxy
+USER node
 EXPOSE 8888
-USER tinyproxy
-ENTRYPOINT ["/usr/local/bin/sandbox-proxy-entrypoint"]
+ENTRYPOINT ["node", "/usr/local/bin/sandbox-proxy"]

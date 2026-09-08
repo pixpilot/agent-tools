@@ -32,7 +32,7 @@ A bare invocation asks, in order:
 | Task name                                   | _(required)_                                                                   |
 | Centralized skills/prompts directory        | `%USERPROFILE%\.coding-agent-sandbox\skills` — skipped without a network       |
 | Let the agent act without approval prompts? | Yes                                                                            |
-| Allow writes to shared Git metadata?        | Yes                                                                            |
+| Enable isolated Git history and commits?    | Yes                                                                            |
 
 The guided setup needs a terminal. Without one, use `--yes --task` and any other options instead.
 
@@ -43,12 +43,12 @@ The guided setup needs a terminal. Without one, use `--yes --task` and any other
 3. Creates (or reuses) the worktree at `<repo-parent>/<repo-name>.worktrees/<task>-<agent>`.
 4. Refuses to start if another sandbox container is already using that worktree.
 5. Builds the shared development image once, then reuses it.
-6. Mounts only the worktree read/write at `/workspace`.
+6. Mounts the worktree read/write at `/workspace` and private session Git metadata.
 7. Provisions your skills/prompts by running the skills repository's **own** sync utility.
 8. Installs project dependencies with [`@antfu/ni`](https://github.com/antfu-collective/ni).
 9. Launches the agent interactively and hands you the terminal.
 
-On exit the container is removed and the branch, worktree and changes are left exactly as they are. Nothing is merged, reset or deleted.
+On exit the container is removed. Agent commits are safely imported into that worktree's branch; uncommitted changes remain in the worktree. Nothing is merged into your main branch or deleted.
 
 The exit summary includes short Git status and separate staged/unstaged diff statistics. Untracked files appear in status; committed changes are not included in these statistics.
 
@@ -77,7 +77,7 @@ Z:\github\roleclick.worktrees\fix-resume-generation-codex   -> /workspace  (a se
 | `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                             |
 | `--no-install`            | Skip project dependency installation                                                 |
 | `--no-skills`             | Skip skills/prompts provisioning                                                     |
-| `--no-git-mount`          | Do not mount the shared `.git` directory (Git stops working in-container)            |
+| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                         |
 | `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                     |
 | `--rebuild-image`         | Rebuild the shared development image                                                 |
 | `--login`                 | Force the agent login flow before launching                                          |
@@ -132,12 +132,14 @@ Canonical skills directory not found:
 How would you like to continue?
 
 > Use another skills directory
+  Continue without skills or prompts
   Cancel
 ```
 
 Pass `--skills-repo <url>` to add a “clone the requested skills repository” option.
 
 Provisioning **fails closed**: if the mount, the sync utility or the post-sync setup fails, the agent is never launched.
+Choose “Continue without skills or prompts” to launch that session without mounting or syncing them; it is the interactive equivalent of `--no-skills`.
 
 ### Host-path shims
 
@@ -162,14 +164,15 @@ Codex uses `codex login --device-auth`, so no callback port is published. Device
 
 Every session runs behind its own egress proxy. The container joins a per-session
 internal Docker network with no usable route off it; the only other member is a
-tinyproxy sidecar that also holds a normal bridge. Nothing else is reachable —
-not the internet, the LAN, the Docker host or `169.254.169.254` — because there
-is no route, not because something is configured to refuse.
+proxy sidecar that also holds a normal bridge. The proxy resolves targets itself,
+pins connections to public IPv4 addresses, and rejects private, link-local,
+loopback and reserved destinations. The agent therefore cannot reach the LAN,
+Docker host or `169.254.169.254` directly or through the proxy.
 
 | `--network` | Egress                                                      | Bootstrap |
 | ----------- | ----------------------------------------------------------- | --------- |
 | `strict`    | the agent's provider plus the detected project's registries | full      |
-| `open`      | any hostname, every one of them logged                      | full      |
+| `open`      | any public hostname, every one of them logged               | full      |
 | `none`      | nothing                                                     | skipped   |
 
 `strict` is the default. The allowlist is composed from the selected agent's
@@ -222,18 +225,16 @@ agent's `WebFetch` work at all.
 Use `--network open` for research tasks, then read the printed hostnames to
 decide what deserves a permanent entry.
 
-TLS is never intercepted. The proxy reads the hostname from the `CONNECT` line,
-decides, and then pipes bytes, so subscription OAuth logins and certificate
-pinning keep working.
+TLS is never intercepted. In `strict` mode the proxy requires the TLS ClientHello
+SNI to match the allowed `CONNECT` hostname before it opens the upstream socket,
+closing the co-hosted-CDN bypass without decrypting OAuth or pinned traffic.
 
 **Known limits.** `CONNECT` is restricted to port 443, so Git over SSH and tools
 using raw sockets fail in every mode; HTTPS remotes work where the host is
-permitted. A non-MITM proxy cannot see the SNI inside a tunnel, so a blocked
-domain co-hosted on an allowlisted host's CDN is still reachable. DNS-based
-exfiltration is out of scope. The goal is to remove the easy outbound paths and
-make the rest auditable, not to provide data-loss prevention — and the persistent
-credential volume is still mounted and still readable by anything in the
-container.
+permitted. IPv6-only destinations are currently refused so the proxy can enforce
+its public-address policy. DNS-based exfiltration is out of scope. The goal is to
+remove the easy outbound paths and make everything else auditable; the persistent
+credential volume is still mounted and readable by the agent process.
 
 If something fails only under `strict`, rerun with `--network open` when you
 trust the operation, then read the printed hostnames to decide what to allow.
@@ -261,7 +262,7 @@ After every session, the CLI removes all unused labeled dependency volumes, incl
 
 ## Docker image
 
-One shared image for every agent and every project type: Node.js 22 (Debian slim), Git, Python 3, ripgrep, jq and common shell utilities, plus `@antfu/ni` and corepack. It runs as the unprivileged `node` user and is built from the bundled `docker/` context on first use, then cached; the tag is derived from the build context so edits trigger a rebuild.
+One shared image for every agent and every project type: Node.js 24.15 (Debian slim), Git, Python 3, ripgrep, jq and common shell utilities, plus `@antfu/ni` and corepack. It runs as the unprivileged `node` user and is built from the bundled `docker/` context on first use, then cached; the tag is derived from the build context so edits trigger a rebuild.
 
 Agent CLIs are installed at session start into a shared `coding-agent-sandbox-npm-global` volume rather than baked into the image, so there is no per-agent image and no reinstall on every run.
 
@@ -279,15 +280,15 @@ Keeping `node_modules` in a named volume means Windows never sees a Linux depend
 
 ## Git inside the container
 
-A worktree's `.git` file points at a path in the main repository, which does not exist inside the container. So the repository's shared `.git` **directory** is mounted at `/repo/.git` and Git is steered at the worktree with `GIT_DIR` and `GIT_WORK_TREE`. Commits, diffs, branches and history all work in `/workspace`.
+A worktree's `.git` file points at a host path that does not exist in the container. For each session, the CLI creates a private no-hardlink clone, mounts it at `/repo/.git`, and replaces the worktree pointer with a read-only `gitdir: /repo/.git` file. Commits, diffs, branches and history therefore work in `/workspace` without exposing the host repository's objects, refs, hooks or config.
 
-This design shares writable Git metadata, including objects, refs, hooks, config and other worktree indexes. The agent can therefore affect repository history and metadata beyond its own branch, even though the main **working tree** files are not mounted. Hooks and config changes can also affect later host Git commands. Use `--no-git-mount` to withhold it entirely — Git then stops working inside the container. Stronger Git isolation would require a separate clone and an explicit commit-transfer workflow.
+When the session ends, the CLI imports only commits that fast-forward from the recorded base into that worktree's branch. The host branch must still point at that base, and host hooks are disabled during the index refresh. If either condition fails, the private clone is retained for recovery and the host repository is left untouched. Use `--no-git-mount` to disable Git entirely inside the container.
 
 Commit identity is passed as `GIT_AUTHOR_*`/`GIT_COMMITTER_*` environment variables read from the host repository config, so no host config file is mounted.
 
 ## Safety guarantees
 
-- The main working tree is never mounted; the dedicated worktree and, by default, shared Git metadata are writable.
+- The main working tree and its `.git` directory are never mounted; only the dedicated worktree and private session Git metadata are writable.
 - An existing worktree is never recreated, overwritten or reset.
 - Nothing is ever merged, and no branch or worktree is ever deleted — including after a crash or Ctrl+C.
 - Two active agent containers can never share a worktree.
@@ -328,7 +329,7 @@ Project environments work the same way — subclass `EnvironmentAdapter` with a 
 ## Requirements
 
 - Docker Desktop (Windows is the primary target; native Windows paths are passed through rather than translated).
-- Node.js 22+ on the host.
+- Node.js 24.15+ on the host.
 - Git 2.31+.
 
 ## Programmatic use

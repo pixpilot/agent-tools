@@ -1,6 +1,7 @@
 import type { AgentAdapter } from '../agents/agent-adapter';
 import type { EnvironmentAdapter } from '../environments/environment-adapter';
 import { BOOTSTRAP_EGRESS_HOSTS } from '../constants';
+import { isEgressHost } from './render-host-filter';
 
 /** Everything that contributes hosts to one session's allowlist. */
 export interface EgressHostSources {
@@ -27,5 +28,15 @@ export function resolveEgressHosts({
     ...(extraHosts ?? []),
   ].map((host) => host.trim().toLowerCase());
 
-  return [...new Set(hosts.filter((host) => host !== ''))].sort();
+  const resolved = [...new Set(hosts.filter((host) => host !== ''))].sort();
+
+  for (const host of resolved) {
+    if (!isEgressHost(host)) {
+      throw new Error(
+        `Invalid egress host ${JSON.stringify(host)}. Expected a hostname such as "example.com" or "*.example.com".`,
+      );
+    }
+  }
+
+  return resolved;
 }

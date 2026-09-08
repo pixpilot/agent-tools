@@ -149,3 +149,4 @@ yarn-error.log*
 .turbo/
 .turbo-*
 
+packages/coding-agent-sandbox/docs/sandbox-audit-*

@@ -17,6 +17,11 @@ import { runContainer } from '../docker/run-container';
 import { detectEnvironment } from '../environments/detect-environment';
 import { ensureWorktree } from '../git/ensure-worktree';
 import { getRemoteHosts } from '../git/get-remote-hosts';
+import {
+  importSandboxGit,
+  prepareSandboxGit,
+  removeSandboxGit,
+} from '../git/prepare-sandbox-git';
 import { previewWorktree } from '../git/preview-worktree';
 import { resolveRepository } from '../git/resolve-repository';
 import { resolveWorktreePlan } from '../git/resolve-worktree-plan';
@@ -33,6 +38,8 @@ import { ensureNoActiveContainer } from './ensure-no-active-container';
 import { ensureWorktreeSourceIsClean } from './ensure-worktree-source-is-clean';
 import { printSessionPlan } from './print-session-plan';
 import { printSessionSummary } from './print-session-summary';
+
+const SHORT_COMMIT_LENGTH = 12;
 
 /**
  * Runs one sandboxed agent session end to end: validate, prepare the worktree,
@@ -74,6 +81,8 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     warn(
       'No network: skipping skills, installs and login. Cloud agents cannot reach their providers.',
     );
+  } else if (skills.disabled) {
+    warn('Continuing without skills or prompts for this session.');
   } else if (options.skills) {
     detail(`skills: ${skills.path}`);
   } else {
@@ -112,6 +121,8 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   const containerName = buildContainerName(agent.id, worktree.taskSlug, worktree.path);
   const proxied = usesProxy(options.network);
   const names = sessionNetworkNames(containerName);
+  const sandboxGit =
+    options.gitMount && !options.dryRun ? prepareSandboxGit(repository, worktree) : undefined;
   // The repository's own remotes must be reachable, or a session whose purpose
   // is committing to that repository cannot fetch, pull or push.
   const egressHosts = resolveEgressHosts({
@@ -133,7 +144,8 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     containerName,
     repositoryRoot: repository.root,
     worktreePath: worktree.path,
-    gitDirPath: repository.gitDir,
+    gitDirPath: sandboxGit?.gitDir ?? repository.gitDir,
+    gitPointerPath: sandboxGit?.pointerPath,
     mountGit: options.gitMount,
     skillsPath: skills.path,
     volumes: buildSessionVolumes(agent, environment, worktree.path),
@@ -149,27 +161,53 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   };
 
   if (options.dryRun) {
+    if (sessionPlan.mountGit) {
+      sessionPlan.gitPointerPath = `${repository.gitDir}/sandbox-git-pointer-preview`;
+    }
     printSessionPlan(sessionPlan);
     return 0;
   }
 
-  if (proxied) {
-    ensureSessionNetwork({
-      names,
-      mode: options.network === 'open' ? 'open' : 'strict',
-      allowHosts: egressHosts,
-      labels: sessionPlan,
-      proxyImage: ensureProxyImage({ rebuild: options.rebuildImage }),
-    });
-  }
-
-  success(`Starting ${agent.label} in ${sessionPlan.containerName}`);
-  ensureSessionVolumes(sessionPlan.volumes);
   let exitCode = 1;
   let proxyHosts: string[] = [];
+  let preserveSandboxGit = false;
   try {
+    if (proxied) {
+      ensureSessionNetwork({
+        names,
+        mode: options.network === 'open' ? 'open' : 'strict',
+        allowHosts: egressHosts,
+        labels: sessionPlan,
+        proxyImage: ensureProxyImage({ rebuild: options.rebuildImage }),
+      });
+    }
+
+    success(`Starting ${agent.label} in ${sessionPlan.containerName}`);
+    ensureSessionVolumes(sessionPlan.volumes);
     exitCode = await runContainer(sessionPlan);
   } finally {
+    if (sandboxGit != null) {
+      try {
+        const imported = importSandboxGit(sandboxGit, repository, worktree);
+        if (imported != null) {
+          detail(
+            `Imported sandbox commit ${imported.slice(0, SHORT_COMMIT_LENGTH)} into ${worktree.branch}.`,
+          );
+        }
+      } catch (cause) {
+        preserveSandboxGit = true;
+        warn(
+          `Could not import sandbox commits safely: ${
+            cause instanceof Error ? cause.message : String(cause)
+          }. Private Git data was kept at ${sandboxGit.root} for recovery.`,
+        );
+      } finally {
+        if (!preserveSandboxGit) {
+          removeSandboxGit(sandboxGit);
+        }
+      }
+    }
+
     if (proxied) {
       // The log dies with the container, so read it before teardown.
       proxyHosts = readProxyHosts(names);

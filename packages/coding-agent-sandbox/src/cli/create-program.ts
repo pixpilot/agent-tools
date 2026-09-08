@@ -56,7 +56,7 @@ export function createProgram(version: string): Command {
     .option('--memory <size>', 'Limit container memory (unconstrained by default)')
     .option('--offline', 'Deprecated alias for --network none')
     .option('--no-skills', 'Skip skills/prompts provisioning')
-    .option('--no-git-mount', 'Do not mount the shared .git directory')
+    .option('--no-git-mount', 'Disable isolated Git support inside the container')
     .option('--update-agent', 'Reinstall/upgrade the agent CLI in the container')
     .option('--rebuild-image', 'Rebuild the shared development image')
     .option('--login', 'Force the agent login flow before launching')

@@ -1,4 +1,4 @@
-import type { SandboxOptions } from '../../src/types';
+import type { SandboxOptions, SkillsInfo } from '../../src/types';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { getAgent } from '../../src/agents/agent-registry';
@@ -21,7 +21,7 @@ const worktree = {
   gitDirRelative: 'worktrees/fix-resume-claude',
 };
 
-const skills = { path: path.resolve('skills'), syncCommand: 'npm run sync' };
+const skills: SkillsInfo = { path: path.resolve('skills'), syncCommand: 'npm run sync' };
 
 function makeOptions(overrides: Partial<SandboxOptions> = {}): SandboxOptions {
   return {
@@ -42,13 +42,17 @@ function makeOptions(overrides: Partial<SandboxOptions> = {}): SandboxOptions {
   };
 }
 
-function build(overrides: Partial<SandboxOptions> = {}, agentId = 'claude') {
+function build(
+  overrides: Partial<SandboxOptions> = {},
+  agentId = 'claude',
+  skillsInfo = skills,
+) {
   return buildSessionEnv({
     agent: getAgent(agentId),
     environment: new NodeEnvironment(),
     repository,
     worktree,
-    skills,
+    skills: skillsInfo,
     options: makeOptions({ agent: agentId, ...overrides }),
   });
 }
@@ -102,15 +106,21 @@ describe('buildSessionEnv', () => {
     expect(build({ skills: false })['SANDBOX_SKILLS_ENABLED']).toBe('0');
   });
 
+  it('should disable skills provisioning when it was skipped in the setup prompt', () => {
+    expect(
+      build({}, 'claude', { ...skills, disabled: true })['SANDBOX_SKILLS_ENABLED'],
+    ).toBe('0');
+  });
+
   it('should install project dependencies only when enabled', () => {
     expect(build()['SANDBOX_DEPS_INSTALL']).toBe('ni');
     expect(build({ install: false })['SANDBOX_DEPS_INSTALL']).toBeUndefined();
   });
 
-  it('should steer Git at the worktree git directory inside the mounted .git', () => {
+  it('should steer Git at the private session directory', () => {
     const env = build();
 
-    expect(env['GIT_DIR']).toBe('/repo/.git/worktrees/fix-resume-claude');
+    expect(env['GIT_DIR']).toBe('/repo/.git');
     expect(env['GIT_WORK_TREE']).toBe('/workspace');
   });
 

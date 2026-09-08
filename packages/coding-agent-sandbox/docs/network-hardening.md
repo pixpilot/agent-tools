@@ -161,7 +161,7 @@ specification, not a strawman.
 ```
 agent container
   └── coding-agent-sandbox-net-<session>          (--internal + inhibit_ipv4)
-        └── proxy sidecar (tinyproxy)
+        └── proxy sidecar (public-IP + TLS-SNI policy)
               └── coding-agent-sandbox-egress-<session>   (normal bridge)
                     └── internet
 ```
@@ -208,7 +208,7 @@ part of this change.
 | Mode     | Agent container network | Egress                                              | Bootstrap steps                   |
 | -------- | ----------------------- | --------------------------------------------------- | --------------------------------- |
 | `strict` | internal + proxy        | agent provider hosts + active adapter `egressHosts` | full                              |
-| `open`   | internal + proxy        | any hostname, every hostname logged                 | full                              |
+| `open`   | internal + proxy        | any public hostname, every hostname logged          | full                              |
 | `none`   | `--network none`        | nothing                                             | skipped (the old `--offline` (a)) |
 
 `strict` is the default. `none` is exactly the old `--offline`: `--network none`,
@@ -325,8 +325,9 @@ maintenance this change does not need.
   follow-up.
 - **SSH.** No SSH proxying, no port-22 handling. HTTPS Git remotes keep working
   wherever their host is permitted.
-- **Worktrees, Git mounts, the agent execution model.** The existing filesystem
-  isolation model is preserved unchanged.
+- **Worktrees and agent execution model.** The dedicated worktree remains the
+  writable project surface. Shared Git metadata is not mounted; a private clone
+  and guarded fast-forward import preserve in-container Git workflows.
 
 ---
 
@@ -422,7 +423,7 @@ Create, connect, then start — so the proxy never runs without its egress leg, 
 there is no readiness race to poll for:
 
 ```
-docker network create --internal --label … <net-internal>
+docker network create --internal --opt com.docker.network.bridge.inhibit_ipv4=true --label … <net-internal>
 docker network create            --label … <net-egress>
 docker create --name <proxy> --network <net-internal> --label …
        --cap-drop=ALL --security-opt=no-new-privileges --pids-limit 64
@@ -441,45 +442,23 @@ best-effort with a warning, matching `pruneStaleVolumes`.
 
 ### 7.3 Proxy image and configuration
 
-`docker/Dockerfile.proxy` — `FROM debian:bookworm-slim`, `apt-get install
-tinyproxy ca-certificates`, copy the entrypoint, `USER tinyproxy`. Tinyproxy
-listens on 8888, above 1024, so no capability is needed to bind, and the config
-omits `User`/`Group` (dropping privileges would need `CAP_SETUID`, which is
-dropped).
+`docker/Dockerfile.proxy` uses the same Node 24.15 base as the agent image and
+runs `docker/proxy-server.mjs` as unprivileged `node`. It accepts HTTPS
+`CONNECT` only on port 443 and plain HTTP only on port 80. Every destination is
+resolved by the proxy and connected by the selected IPv4 address, never by a
+second hostname lookup. Loopback, RFC1918, CGNAT, link-local, documentation,
+benchmark, multicast and reserved ranges are refused in **both** modes.
 
-`docker/proxy-entrypoint.sh` renders the configuration once from environment
-variables, then `exec`s tinyproxy. Environment-rendered rather than bind-mounted:
-no host path translation on Windows, no CRLF or permission problems, and it
-matches the existing `SANDBOX_*` entrypoint contract. The rendered file is static
-for the container's life.
-
-```
-Port 8888
-Timeout 600
-ConnectPort 443          # CONNECT to 443 only — no SSH, no arbitrary ports
-LogLevel Connect         # hostname per connection, to stdout (no LogFile under -d)
-DisableViaHeader Yes
-# strict mode only:
-FilterDefaultDeny Yes
-FilterExtended On
-FilterCaseSensitive Off
-FilterURLs Off
-Filter /tmp/tinyproxy.filter
-```
-
-Filter entries are **anchored** regexes generated from the host list —
-`^registry\.npmjs\.org$`, never bare `registry.npmjs.org`, which would also match
-`registry.npmjs.org.attacker.example`. Hosts are validated against a conservative
-pattern and their dots escaped before rendering; an entry that fails validation is
-a hard error, not a silently dropped line. An optional leading `*.` in an adapter's
-list renders as `^([a-z0-9-]+\.)+example\.com$`.
-
-`open` mode omits the whole filter block and keeps `LogLevel Connect`, so every
-hostname is still recorded.
+In `strict`, raw validated host entries are matched exactly (or as explicit
+`*.` subdomains). After returning `200 Connection Established`, the proxy parses
+the first TLS ClientHello and requires its SNI to equal the CONNECT hostname
+before opening the upstream socket. This prevents the co-hosted-CDN/SNI bypass
+without terminating TLS. `open` retains the public-address restriction but lets
+any public hostname through and logs each request.
 
 Image tagging: `resolveImageTag` currently hashes every file in the flat `docker/`
 context. Split it so the agent image hashes the non-proxy files and the proxy image
-hashes only `Dockerfile.proxy` and `proxy-entrypoint.sh` — four lines, and it stops
+hashes only `Dockerfile.proxy` and `proxy-server.mjs` — four lines, and it stops
 a proxy tweak from forcing a rebuild of the heavy agent image.
 
 ### 7.4 Agent container changes
@@ -536,8 +515,8 @@ untouched.
 
 | File                                   | Purpose                                             |
 | -------------------------------------- | --------------------------------------------------- |
-| `docker/Dockerfile.proxy`              | Tinyproxy from Debian packages                      |
-| `docker/proxy-entrypoint.sh`           | Render static config from env, exec tinyproxy       |
+| `docker/Dockerfile.proxy`              | Unprivileged Node proxy image                       |
+| `docker/proxy-server.mjs`              | Public-IP, strict-host and TLS-SNI enforcement      |
 | `src/network/network-mode.ts`          | `NetworkMode` type and parser                       |
 | `src/network/resolve-egress-hosts.ts`  | bootstrap + agent + environment, deduped and sorted |
 | `src/network/session-network-names.ts` | Deterministic names from the session identity       |
@@ -555,7 +534,7 @@ untouched.
 `src/session/print-session-summary.ts` · `src/agents/agent-adapter.ts` and the
 three agents · `src/environments/environment-adapter.ts` and
 `node-environment.ts` · `src/docker/prune-volumes.ts` (extend to stale labeled
-networks and proxy containers) · `README.md`.
+networks and proxy containers) · `src/git/prepare-sandbox-git.ts` · `README.md`.
 
 ### 7.7 Sequencing
 
@@ -601,12 +580,16 @@ the shared vitest config runs in CI without Docker. Each case is a
 | 5   | `host.docker.internal` is unresolvable, or resolvable but unreachable — asserted, not assumed                                                                                                                                       |
 | 6   | No proxy bypass: a direct, `--noproxy` request to an **allowed** host still fails                                                                                                                                                   |
 | 7   | An allowed host through the proxy returns 200 (`registry.npmjs.org`)                                                                                                                                                                |
-| 8   | A blocked host through the proxy is rejected (tinyproxy 403 / curl proxy failure)                                                                                                                                                   |
+| 8   | A blocked host through the proxy is rejected                                                                                                                                                                                         |
 | 9   | `open` mode reaches an arbitrary host, and that hostname appears in `docker logs <proxy>`                                                                                                                                           |
 | 10  | `none` mode has no network at all: only `lo`, every probe fails                                                                                                                                                                     |
 
 Extra, cheap: `CONNECT` to port 22 is refused even in `open` mode, confirming
 `ConnectPort 443`.
+
+Also required: requests **through** the proxy to `169.254.169.254`, RFC1918 and
+the Docker gateway are rejected in both modes, and a strict CONNECT whose TLS
+SNI differs from its allowed hostname is rejected.
 
 Cases 1–6 are the evidence for §4.1's refusal to simply assert that `--internal`
 is sufficient. They must be run on Windows with Docker Desktop, Linux Docker

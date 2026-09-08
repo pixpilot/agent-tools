@@ -2,7 +2,6 @@ import type { NetworkMode } from '../network/network-mode';
 import type { SessionNetworkNames } from '../network/session-network-names';
 import type { SandboxLabelSource } from './build-sandbox-labels';
 import { PROXY_PORT } from '../constants';
-import { renderHostFilter } from '../network/render-host-filter';
 import { detail, step } from '../utils/logger';
 import { runOrThrow } from '../utils/run-command';
 import { buildSandboxLabels } from './build-sandbox-labels';
@@ -85,7 +84,7 @@ export function ensureSessionNetwork(options: SessionNetworkOptions): void {
   }
 }
 
-/** Anchored filter lines, one per host. Empty in `open`, where nothing is filtered. */
+/** Raw allowlist entries; the proxy applies exact/wildcard host matching itself. */
 function buildAllowList({ mode, allowHosts }: SessionNetworkOptions): string {
-  return mode === 'strict' ? allowHosts.map(renderHostFilter).join('\n') : '';
+  return mode === 'strict' ? allowHosts.join('\n') : '';
 }

@@ -8,6 +8,8 @@ import {
   docker,
   DOCKER_TESTS_ENABLED,
   gatewayOf,
+  NODE_PROBE_IMAGE,
+  nodeProbe,
   probe,
   PROBE_IMAGE,
 } from './docker-probe';
@@ -40,6 +42,7 @@ describe.skipIf(!DOCKER_TESTS_ENABLED)('strict mode perimeter', () => {
 
   beforeAll(() => {
     docker(['pull', PROBE_IMAGE]);
+    docker(['pull', NODE_PROBE_IMAGE]);
     names = startSession('a', 'strict');
   }, SETUP_TIMEOUT);
 
@@ -170,6 +173,55 @@ describe.skipIf(!DOCKER_TESTS_ENABLED)('strict mode perimeter', () => {
     },
     CASE_TIMEOUT,
   );
+
+  it(
+    'should reject metadata requests that go through the proxy',
+    () => {
+      const out = probe(
+        names.internal,
+        "curl -s -o /dev/null -w '%{http_code}' --max-time 15 --proxy http://$PROXY http://169.254.169.254/ || true",
+        { PROXY: names.proxyUrl.replace('http://', '') },
+      );
+
+      expect(out.trim()).toBe('502');
+      expect(docker(['logs', names.proxy])).toContain(
+        'PROXY REJECTED http://169.254.169.254/',
+      );
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'should reject a TLS SNI that differs from the strict CONNECT host',
+    () => {
+      const out = nodeProbe(
+        names.internal,
+        `
+          const net = require('node:net');
+          const tls = require('node:tls');
+          const client = net.connect(8888, ${JSON.stringify(names.proxy)});
+          let response = '';
+          const fail = (message) => { console.log(message); process.exit(message === 'REJECTED' ? 0 : 1); };
+          const timer = setTimeout(() => fail('TIMEOUT'), 10_000);
+          client.on('connect', () => client.write('CONNECT registry.npmjs.org:443 HTTP/1.1\\r\\nHost: registry.npmjs.org:443\\r\\n\\r\\n'));
+          client.on('data', (chunk) => {
+            response += chunk;
+            if (!response.includes('\\r\\n\\r\\n')) return;
+            if (!response.startsWith('HTTP/1.1 200')) fail('CONNECT_FAILED');
+            client.removeAllListeners('data');
+            const tunnel = tls.connect({ socket: client, servername: 'example.com', rejectUnauthorized: false });
+            tunnel.once('secureConnect', () => fail('LEAK'));
+            tunnel.once('error', () => fail('REJECTED'));
+          });
+          client.once('error', () => fail('REJECTED'));
+          client.once('close', () => { clearTimeout(timer); });
+        `,
+      );
+
+      expect(out).toContain('REJECTED');
+    },
+    CASE_TIMEOUT,
+  );
 });
 
 describe.skipIf(!DOCKER_TESTS_ENABLED)('open mode perimeter', () => {
@@ -208,6 +260,21 @@ describe.skipIf(!DOCKER_TESTS_ENABLED)('open mode perimeter', () => {
       );
 
       expect(out).toContain('BLOCKED');
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'should reject metadata requests even when the proxy permits public hosts',
+    () => {
+      const out = probe(
+        names.internal,
+        "curl -s -o /dev/null -w '%{http_code}' --max-time 15 --proxy http://$PROXY http://169.254.169.254/ || true",
+        { PROXY: names.proxyUrl.replace('http://', '') },
+      );
+
+      expect(out.trim()).toBe('502');
+      expect(docker(['logs', names.proxy])).toContain('Destination 169.254.169.254 is not a public IPv4 address.');
     },
     CASE_TIMEOUT,
   );

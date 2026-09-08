@@ -12,6 +12,7 @@ function makePlan(overrides: Partial<SessionPlan> = {}): SessionPlan {
     repositoryRoot: path.resolve('repo'),
     worktreePath: path.resolve('repo.worktrees/demo-claude'),
     gitDirPath: path.resolve('repo/.git'),
+    gitPointerPath: path.resolve('sandbox/workspace.git'),
     mountGit: true,
     skillsPath: path.resolve('skills'),
     volumes: [{ name: 'coding-agent-sandbox-auth-claude', target: '/agent-state' }],
@@ -101,14 +102,23 @@ describe('buildRunArgs', () => {
     expect(args).not.toContain('.ssh');
   });
 
-  it('should mount the shared .git directory when Git support is enabled', () => {
+  it('should mount only the isolated .git directory when Git support is enabled', () => {
     expect(buildRunArgs(makePlan())).toContain(`${path.resolve('repo/.git')}:/repo/.git`);
+    expect(buildRunArgs(makePlan())).toContain(
+      `${path.resolve('sandbox/workspace.git')}:/workspace/.git:ro`,
+    );
   });
 
   it('should omit the .git mount when Git support is disabled', () => {
     const args = buildRunArgs(makePlan({ mountGit: false }));
 
     expect(args.some((arg) => arg.endsWith(':/repo/.git'))).toBe(false);
+  });
+
+  it('should reject Git support without an isolated pointer file', () => {
+    expect(() => buildRunArgs(makePlan({ gitPointerPath: undefined }))).toThrow(
+      'isolated .git pointer',
+    );
   });
 
   it('should label the container so concurrent sessions can be detected', () => {

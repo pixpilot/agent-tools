@@ -23,6 +23,7 @@ const plan: SessionPlan = {
   repositoryRoot: '/repo',
   worktreePath: '/worktree',
   gitDirPath: '/repo/.git',
+  gitPointerPath: '/sandbox/workspace.git',
   mountGit: true,
   skillsPath: '/skills',
   volumes: [],

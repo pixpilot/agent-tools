@@ -54,6 +54,8 @@ export interface SkillsInfo {
   path: string;
   /** Command that runs the repository's own sync utility. */
   syncCommand: string;
+  /** Skip mounting and syncing skills/prompts for this session. */
+  disabled?: boolean | undefined;
 }
 
 /** A Docker volume or bind mount added to the session container. */
@@ -111,9 +113,11 @@ export interface SessionPlan {
   containerName: string;
   repositoryRoot: string;
   worktreePath: string;
-  /** Host path of the repository's shared `.git` directory. */
+  /** Host path of the isolated Git directory used only by this session. */
   gitDirPath: string;
-  /** Mount the shared `.git` directory so Git works inside the worktree. */
+  /** File that replaces the worktree's host `.git` pointer inside the container. */
+  gitPointerPath?: string | undefined;
+  /** Mount isolated Git metadata so Git works inside the worktree. */
   mountGit: boolean;
   skillsPath: string;
   volumes: VolumeMount[];

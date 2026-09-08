@@ -2,7 +2,7 @@
  * How much of the network a session gets.
  *
  * - `strict`: only the agent's provider and the active adapters' registries.
- * - `open`: any hostname, every one of them logged by the session proxy.
+ * - `open`: any public hostname, every one of them logged by the session proxy.
  * - `none`: no networking at all, and the network-dependent bootstrap is skipped.
  */
 export type NetworkMode = 'strict' | 'open' | 'none';

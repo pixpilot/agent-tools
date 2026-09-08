@@ -56,6 +56,17 @@ export function buildRunArgs(plan: SessionPlan): string[] {
 
   if (plan.mountGit) {
     args.push('-v', `${toMountSource(plan.gitDirPath)}:${CONTAINER_GIT_DIR}`);
+
+    if (plan.gitPointerPath == null) {
+      throw new Error('Git support requires an isolated .git pointer file.');
+    }
+
+    // Hide the worktree's host-facing pointer so subprocesses with a scrubbed
+    // environment still discover only this session's private Git directory.
+    args.push(
+      '-v',
+      `${toMountSource(plan.gitPointerPath)}:${CONTAINER_WORKSPACE}/.git:ro`,
+    );
   }
 
   if (plan.env['SANDBOX_SKILLS_ENABLED'] !== '0') {

@@ -16,6 +16,9 @@ WORK="${SANDBOX_SKILLS_WORK:-/coding-agent-sandbox/work}"
 
 # The bind-mounted worktree belongs to the host user, not to `node`.
 git config --global --add safe.directory /workspace >/dev/null 2>&1 || true
+# Keep Git's index stable when Docker Desktop exposes a Windows CRLF checkout.
+git config --global core.autocrlf input >/dev/null 2>&1 || true
+git config --global core.eol lf >/dev/null 2>&1 || true
 
 # --- 1. Persist agent state in the per-agent Docker volume -------------------
 # Refuse empty/root homes and traversal before replacing any state paths.

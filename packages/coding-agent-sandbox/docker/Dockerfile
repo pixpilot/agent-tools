@@ -1,7 +1,7 @@
 # One shared development image for every agent and every project type.
 # Agent CLIs are installed at session start into a persistent npm-global volume,
 # so this image never needs to be rebuilt per agent.
-FROM node:22-bookworm-slim
+FROM node:24.15-bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 

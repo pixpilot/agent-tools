@@ -6,7 +6,7 @@ import { shortHash } from '../utils/short-hash';
 const TAG_HASH_LENGTH = 12;
 
 /** Build-context files that belong to the proxy image rather than the agent image. */
-const PROXY_CONTEXT_FILES = new Set(['Dockerfile.proxy', 'proxy-entrypoint.sh']);
+const PROXY_CONTEXT_FILES = new Set(['Dockerfile.proxy', 'proxy-server.mjs']);
 
 /** Image tag derived from the agent build context, so edits trigger a rebuild. */
 export function resolveImageTag(contextDirectory: string): string {

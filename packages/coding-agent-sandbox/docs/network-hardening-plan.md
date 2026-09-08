@@ -45,7 +45,7 @@ flowchart LR
   A["agent container<br/>cap-drop=ALL<br/>no-new-privileges"] --> N1
 
   subgraph S["per session"]
-    N1["internal network<br/>--internal + inhibit_ipv4"] --> P["tinyproxy sidecar<br/>CONNECT :443 only"]
+    N1["internal network<br/>--internal + inhibit_ipv4"] --> P["policy proxy sidecar<br/>public IPs + strict SNI"]
     P --> N2["egress network<br/>normal bridge"]
   end
 
@@ -76,7 +76,7 @@ flowchart TD
   Start["csbx --network ..."] --> Q{"mode"}
 
   Q -->|"strict (default)"| S["internal net + proxy<br/>allowlist enforced"]
-  Q -->|"open"| O["internal net + proxy<br/>any host, all hostnames logged"]
+  Q -->|"open"| O["internal net + proxy<br/>any public host, all hostnames logged"]
   Q -->|"none"| Z["--network none --pull never<br/>bootstrap skipped"]
 
   S --> S1["provider hosts<br/>+ adapter egressHosts"]
@@ -91,7 +91,7 @@ flowchart TD
 | Mode                 | Agent network    | Egress                              | Bootstrap |
 | -------------------- | ---------------- | ----------------------------------- | --------- |
 | `strict` _(default)_ | internal + proxy | provider hosts + `egressHosts`      | full      |
-| `open`               | internal + proxy | any hostname, every hostname logged | full      |
+| `open`               | internal + proxy | any public hostname, every hostname logged | full      |
 | `none`               | `--network none` | nothing                             | skipped   |
 
 `--offline` survives as a deprecated alias for `--network none` and warns.
@@ -120,7 +120,7 @@ sequenceDiagram
     CLI->>D: create proxy on net-SESSION<br/>env: mode + allowlist
     CLI->>D: network connect egress-SESSION proxy
     CLI->>D: start proxy
-    P->>P: render static config, exec tinyproxy
+    P->>P: validate host/IP policy, then start proxy
 
     CLI->>D: run agent --network net-SESSION<br/>HTTPS_PROXY=http://proxy:8888
     A->>P: CONNECT api.anthropic.com:443
@@ -159,7 +159,7 @@ flowchart LR
   AG["selected AgentAdapter<br/>.egressHosts"] --> R
   EN["detected EnvironmentAdapter<br/>.egressHosts"] --> R
   R["resolveEgressHosts()<br/>dedupe + sort"] --> F["anchored regex filter<br/>escaped and pinned per host"]
-  F --> P["tinyproxy"]
+  F --> P["policy proxy"]
 
   style R fill:#1e3a5f,color:#fff,stroke:#3b82f6
   style F fill:#1e3a5f,color:#fff,stroke:#3b82f6
@@ -209,7 +209,7 @@ flowchart TD
 
   EH --> AD["agents/*.ts<br/>environments/*.ts<br/>+ egressHosts"]
   ENS --> IMG["docker/ensure-image.ts<br/>+ ensureProxyImage"]
-  IMG --> DF["docker/Dockerfile.proxy<br/>docker/proxy-entrypoint.sh"]
+  IMG --> DF["docker/Dockerfile.proxy<br/>docker/proxy-server.mjs"]
 
   style ENS fill:#1e3a5f,color:#fff,stroke:#3b82f6
   style DF fill:#1e3a5f,color:#fff,stroke:#3b82f6
@@ -220,8 +220,8 @@ flowchart TD
 
 | File                                   | Does                                               |
 | -------------------------------------- | -------------------------------------------------- |
-| `docker/Dockerfile.proxy`              | Tinyproxy from Debian packages, `USER tinyproxy`   |
-| `docker/proxy-entrypoint.sh`           | Render static config from env, `exec tinyproxy`    |
+| `docker/Dockerfile.proxy`              | Unprivileged Node proxy image                      |
+| `docker/proxy-server.mjs`              | Public-IP, strict-host and TLS-SNI enforcement     |
 | `src/network/network-mode.ts`          | `NetworkMode` type + parser                        |
 | `src/network/resolve-egress-hosts.ts`  | Compose, dedupe, validate, render filter lines     |
 | `src/network/session-network-names.ts` | Deterministic names from the session identity      |
@@ -285,7 +285,7 @@ flowchart LR
 | --- | ----------------------------------------------------------------------- | -------------- | ----------------------------------------------- |
 | 1   | `egressHosts` on both adapters + resolver                               | no             | Pure, unit-tested                               |
 | 2   | `NetworkMode`, `--network`, wizard, plumbing                            | no             | Behaviour change is only `none` = old `offline` |
-| 3   | `Dockerfile.proxy` + entrypoint                                         | yes            | Verifiable standalone by hand before wiring     |
+| 3   | `Dockerfile.proxy` + policy proxy                                       | yes            | Verifiable standalone by hand before wiring     |
 | 4   | `ensure`/`remove-session-network` in run-sandbox                        | yes            | The real switch-on                              |
 | 5   | `--cap-drop`, `no-new-privileges`, `--pids-limit`, `--cpus`, `--memory` | no             | ~10 lines, orthogonal                           |
 | 6   | Integration suite                                                       | yes            | Opt-in, gated by env var                        |
@@ -396,7 +396,7 @@ work. Record the answers in the README.
 | Risk                                                                                                                                                                                                                                                                                                                                                                                                                                   | Impact                                                                                                                        | When we find out |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------- |
 | **An agent CLI ignores `HTTPS_PROXY`.** Node 22's `fetch` does not apply proxy env vars automatically. Claude Code documents that it honours it; Codex and Copilot are unverified.                                                                                                                                                                                                                                                     | `strict` **and** `open` are both unusable for that agent                                                                      | Step 3–4         |
-| **SNI bypass.** Tinyproxy filters the `CONNECT` hostname and cannot see the SNI inside the tunnel, so a disallowed domain co-hosted on an allowlisted CDN is reachable. Docker had to fix this exact bug in sbx v0.33.0.                                                                                                                                                                                                               | Allowlist is weaker than it looks — must be documented, not hidden                                                            | Known now        |
+| **TLS ClientHello compatibility.** Strict mode parses the initial ClientHello and requires SNI to equal the CONNECT hostname; malformed, ECH-only or SNI-less handshakes fail closed.                                                                                                                                                                                                                                              | A non-standard TLS client may need `open` mode                                                                                 | Integration suite |
 | **OAuth login hosts missing from the allowlist**                                                                                                                                                                                                                                                                                                                                                                                       | First run on a fresh auth volume cannot log in                                                                                | Step 7 testing   |
 | **`--internal` alone leaves the host reachable — CONFIRMED, then fixed.** An `--internal` network still has a gateway IP, and that gateway is the Docker host; a container on one reached a host process listening on `0.0.0.0`. Fixed by also passing `--opt com.docker.network.bridge.inhibit_ipv4=true`, leaving the bridge with no address. Re-verified after the change: host unreachable, embedded DNS and the proxy still work. | Would have left T3 open on every platform, and worse on Linux Docker Engine where the gateway is the developer's real machine | Found in step 3  |
 | **`--internal` behaves differently on Docker Desktop**                                                                                                                                                                                                                                                                                                                                                                                 | Portability claim fails                                                                                                       | Step 6, case 1–6 |

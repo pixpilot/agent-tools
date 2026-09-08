@@ -52,7 +52,8 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
     SANDBOX_AUTH_HINT: agent.auth.hint,
     SANDBOX_AUTH_VOLUME: agent.authVolume,
     SANDBOX_FORCE_LOGIN: options.login ? '1' : '0',
-    SANDBOX_SKILLS_ENABLED: options.skills && !offline ? '1' : '0',
+    SANDBOX_SKILLS_ENABLED:
+      options.skills && !inputs.skills.disabled && !offline ? '1' : '0',
     SANDBOX_SKILLS_SRC: CONTAINER_SKILLS_SRC,
     SANDBOX_SKILLS_WORK: CONTAINER_SKILLS_WORK,
     SANDBOX_SKILLS_SYNC_CMD: inputs.skills.syncCommand,
@@ -74,8 +75,9 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
   }
 
   if (options.gitMount) {
-    // Worktree .git files point at host paths, so Git is steered explicitly.
-    env['GIT_DIR'] = `${CONTAINER_GIT_DIR}/${worktree.gitDirRelative}`;
+    // The worktree's host pointer is over-mounted with a private counterpart;
+    // keep Git explicit as well for child processes with unusual CWDs.
+    env['GIT_DIR'] = CONTAINER_GIT_DIR;
     env['GIT_WORK_TREE'] = CONTAINER_WORKSPACE;
   }
 

@@ -1,8 +1,10 @@
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 
 /** Small image with curl, ping and ip; only pulled for the opt-in Docker suite. */
 export const PROBE_IMAGE = 'curlimages/curl:latest';
+/** Node probe used for TLS-level tests that curl cannot express. */
+export const NODE_PROBE_IMAGE = 'node:24.15-bookworm-slim';
 
 /** These tests create real Docker objects, so they never run unless asked for. */
 export const DOCKER_TESTS_ENABLED = process.env['SANDBOX_DOCKER_TESTS'] === '1';
@@ -23,17 +25,19 @@ export function probe(
   return docker(args);
 }
 
+/** Runs a Node snippet in the isolated network for protocol-level assertions. */
+export function nodeProbe(network: string, script: string): string {
+  return docker(['run', '--rm', '--network', network, NODE_PROBE_IMAGE, 'node', '-e', script]);
+}
+
 /** Runs a docker command, returning stdout and stderr whether or not it failed. */
 export function docker(args: string[]): string {
-  try {
-    return execFileSync('docker', args, {
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  } catch (cause) {
-    const failure = cause as { stdout?: string; stderr?: string };
-    return `${failure.stdout ?? ''}${failure.stderr ?? ''}`;
-  }
+  const result = spawnSync('docker', args, {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  return `${result.stdout ?? ''}${result.stderr ?? ''}`;
 }
 
 /** The gateway address a container on `network` routes through. */

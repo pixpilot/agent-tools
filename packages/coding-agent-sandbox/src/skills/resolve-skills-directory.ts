@@ -18,8 +18,9 @@ export interface ResolveSkillsOptions {
 
 /**
  * Resolves the canonical skills directory for a session, falling back to the
- * documented prompt (another directory / clone the default / cancel) when the
- * default location is missing. Fails closed - it never silently continues.
+ * documented prompt (another directory / clone the default / skip / cancel)
+ * when the default location is missing. Fails closed - it never silently
+ * continues.
  */
 export async function resolveSkillsDirectory(
   options: ResolveSkillsOptions = {},
@@ -56,6 +57,7 @@ async function promptForSkills(
     ...(repositoryUrl != null && repositoryUrl !== ''
       ? [{ name: 'Clone the requested skills repository', value: 'clone' }]
       : []),
+    { name: 'Continue without skills or prompts', value: 'ignore' },
     { name: 'Cancel', value: 'cancel' },
   ];
   const choice = await select({
@@ -65,6 +67,10 @@ async function promptForSkills(
 
   if (choice === 'cancel') {
     throw new Error('Cancelled - no container was created.');
+  }
+
+  if (choice === 'ignore') {
+    return { path: missingPath, syncCommand: 'true', disabled: true };
   }
 
   if (choice === 'clone' && repositoryUrl != null && repositoryUrl !== '') {
