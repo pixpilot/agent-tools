@@ -274,7 +274,9 @@ describe.skipIf(!DOCKER_TESTS_ENABLED)('open mode perimeter', () => {
       );
 
       expect(out.trim()).toBe('502');
-      expect(docker(['logs', names.proxy])).toContain('Destination 169.254.169.254 is not a public IPv4 address.');
+      expect(docker(['logs', names.proxy])).toContain(
+        'Destination 169.254.169.254 is not a public IPv4 address.',
+      );
     },
     CASE_TIMEOUT,
   );

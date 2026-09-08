@@ -42,7 +42,10 @@ export function prepareSandboxGit(
     ]);
     runOrThrow('git', ['--git-dir', gitDir, 'read-tree', worktree.branch]);
     fs.mkdirSync(hooksPath);
-    fs.writeFileSync(pointerPath, 'gitdir: /repo/.git\n', { encoding: 'utf-8', mode: 0o600 });
+    fs.writeFileSync(pointerPath, 'gitdir: /repo/.git\n', {
+      encoding: 'utf-8',
+      mode: 0o600,
+    });
 
     return {
       root,
@@ -50,7 +53,12 @@ export function prepareSandboxGit(
       pointerPath,
       hooksPath,
       branch: worktree.branch,
-      baseCommit: runOrThrow('git', ['-C', repository.root, 'rev-parse', worktree.branch]),
+      baseCommit: runOrThrow('git', [
+        '-C',
+        repository.root,
+        'rev-parse',
+        worktree.branch,
+      ]),
     };
   } catch (cause) {
     fs.rmSync(root, { recursive: true, force: true });
@@ -81,7 +89,12 @@ export function importSandboxGit(
     );
   }
 
-  const current = runOrThrow('git', ['-C', repository.root, 'rev-parse', sandboxGit.branch]);
+  const current = runOrThrow('git', [
+    '-C',
+    repository.root,
+    'rev-parse',
+    sandboxGit.branch,
+  ]);
 
   if (current !== sandboxGit.baseCommit) {
     throw new Error(

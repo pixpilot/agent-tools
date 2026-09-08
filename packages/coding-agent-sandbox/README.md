@@ -77,7 +77,7 @@ Z:\github\roleclick.worktrees\fix-resume-generation-codex   -> /workspace  (a se
 | `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                             |
 | `--no-install`            | Skip project dependency installation                                                 |
 | `--no-skills`             | Skip skills/prompts provisioning                                                     |
-| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                         |
+| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                        |
 | `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                     |
 | `--rebuild-image`         | Rebuild the shared development image                                                 |
 | `--login`                 | Force the agent login flow before launching                                          |

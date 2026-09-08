@@ -20,11 +20,7 @@ const server = http.createServer((request, response) => {
   proxyHttp(request, response).catch((error) => {
     const message = error instanceof Error ? error.message : 'Proxy request failed';
     log('REJECTED', request.url ?? 'unknown', message);
-    writeError(
-      response,
-      502,
-      message,
-    );
+    writeError(response, 502, message);
   });
 });
 
@@ -283,8 +279,7 @@ async function readClientHello(socket, head) {
       inspect();
     };
     onError = (error) => finish(error);
-    onClose = () =>
-      finish(new Error('Client closed before sending TLS ClientHello.'));
+    onClose = () => finish(new Error('Client closed before sending TLS ClientHello.'));
 
     timeout = setTimeout(
       () => finish(new Error('Timed out waiting for TLS ClientHello.')),

@@ -27,7 +27,16 @@ export function probe(
 
 /** Runs a Node snippet in the isolated network for protocol-level assertions. */
 export function nodeProbe(network: string, script: string): string {
-  return docker(['run', '--rm', '--network', network, NODE_PROBE_IMAGE, 'node', '-e', script]);
+  return docker([
+    'run',
+    '--rm',
+    '--network',
+    network,
+    NODE_PROBE_IMAGE,
+    'node',
+    '-e',
+    script,
+  ]);
 }
 
 /** Runs a docker command, returning stdout and stderr whether or not it failed. */

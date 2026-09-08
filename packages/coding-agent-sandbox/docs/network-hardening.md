@@ -580,7 +580,7 @@ the shared vitest config runs in CI without Docker. Each case is a
 | 5   | `host.docker.internal` is unresolvable, or resolvable but unreachable — asserted, not assumed                                                                                                                                       |
 | 6   | No proxy bypass: a direct, `--noproxy` request to an **allowed** host still fails                                                                                                                                                   |
 | 7   | An allowed host through the proxy returns 200 (`registry.npmjs.org`)                                                                                                                                                                |
-| 8   | A blocked host through the proxy is rejected                                                                                                                                                                                         |
+| 8   | A blocked host through the proxy is rejected                                                                                                                                                                                        |
 | 9   | `open` mode reaches an arbitrary host, and that hostname appears in `docker logs <proxy>`                                                                                                                                           |
 | 10  | `none` mode has no network at all: only `lo`, every probe fails                                                                                                                                                                     |
 

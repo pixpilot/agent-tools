@@ -10,7 +10,7 @@ Do not run anything destructive, long, or heavy (no full installs, no browser do
 Note whether each check ran as expected or timed out; a hang is itself a finding.
 Produce the report under these headings:
 
-1. Identity and container basics — whoami, uid/gid, groups, root or not; OS/kernel/distro; working dir and what /workspace is (mount type, ownership, writable?); every SANDBOX*\*, GIT*_, __PROXY, NO_PROXY, NODE_\* env var (mask secret values, show only that the key exists).
+1. Identity and container basics — whoami, uid/gid, groups, root or not; OS/kernel/distro; working dir and what /workspace is (mount type, ownership, writable?); every SANDBOX*\*, GIT*_, \_\_PROXY, NO_PROXY, NODE_\* env var (mask secret values, show only that the key exists).
 
 2. Network egress — what proxy is configured, what NO_PROXY is; default route and whether the gateway is pingable; direct (--noproxy '\*') tests of the internet, a LAN address, and 169.254.169.254 (all should fail — confirm); through the proxy, allowed vs refused with exact status for registry.npmjs.org, your git remote host, api.anthropic.com, github.com, api.github.com, objects.githubusercontent.com, pypi.org, cdn.jsdelivr.net, esm.sh, raw.githubusercontent.com, and example.com; whether host.docker.internal resolves/reaches; a CONNECT to a non-443 port (e.g. github.com:22); whether DNS resolves for blocked hosts.
 

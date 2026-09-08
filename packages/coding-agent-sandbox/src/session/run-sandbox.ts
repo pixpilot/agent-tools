@@ -122,7 +122,9 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   const proxied = usesProxy(options.network);
   const names = sessionNetworkNames(containerName);
   const sandboxGit =
-    options.gitMount && !options.dryRun ? prepareSandboxGit(repository, worktree) : undefined;
+    options.gitMount && !options.dryRun
+      ? prepareSandboxGit(repository, worktree)
+      : undefined;
   // The repository's own remotes must be reachable, or a session whose purpose
   // is committing to that repository cannot fetch, pull or push.
   const egressHosts = resolveEgressHosts({
