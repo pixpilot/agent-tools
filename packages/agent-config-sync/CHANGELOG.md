@@ -1,5 +1,11 @@
 # @pixpilot/agent-config-sync
 
+## 0.7.0
+
+### Minor Changes
+
+- support model defaults and proxy auditing
+
 ## 0.6.0
 
 ### Minor Changes

@@ -1,7 +1,7 @@
 {
   "name": "@pixpilot/agent-config-sync",
   "type": "module",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "packageManager": "pnpm@10.17.0",
   "description": "Synchronize agent configuration files across supported tools.",
   "author": "Mo Doaie <m.doaie@hotmail.com>",
