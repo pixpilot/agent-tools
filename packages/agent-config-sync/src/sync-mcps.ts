@@ -6,6 +6,7 @@ import { parseJsonc } from './jsonc.ts';
 
 const JSON_INDENT_SPACES = 2;
 const PORTABLE_DEFAULTS_KEY = '$defaults';
+const JSON_SCHEMA_KEY = '$schema';
 const STARTUP_TIMEOUT_KEY = 'startupTimeoutSec';
 const CODEX_OPTIONAL_STARTUP_GRACE_KEY = 'mcp_optional_startup_grace_ms';
 const MILLISECONDS_PER_SECOND = 1_000;
@@ -109,7 +110,9 @@ function readMcpConfig(source: string): McpConfig {
   const sourceConfig = value as Record<string, unknown>;
   const defaults = sourceConfig[PORTABLE_DEFAULTS_KEY];
   const servers = Object.fromEntries(
-    Object.entries(sourceConfig).filter(([name]) => name !== PORTABLE_DEFAULTS_KEY),
+    Object.entries(sourceConfig).filter(
+      ([name]) => name !== PORTABLE_DEFAULTS_KEY && name !== JSON_SCHEMA_KEY,
+    ),
   );
 
   return {

@@ -12,6 +12,8 @@ const DEFAULTS_KEY = '$defaults';
 export interface AgentSettings {
   /** Agent-specific model name, passed through to the agent CLI unvalidated. */
   model?: string | undefined;
+  /** Agent-specific model names available to integrations for selection. */
+  models?: readonly string[] | undefined;
 }
 
 /**
@@ -32,8 +34,16 @@ export function readAgentSettings(
   const defaults = readObject(contents[DEFAULTS_KEY] ?? {}, file, DEFAULTS_KEY);
   const forAgent = readObject(contents[agent] ?? {}, file, agent);
   const model = readOptionalString(forAgent['model'] ?? defaults['model'], file, 'model');
+  const models = readOptionalStrings(
+    forAgent['models'] ?? defaults['models'],
+    file,
+    'models',
+  );
 
-  return model == null ? {} : { model };
+  return {
+    ...(model == null ? {} : { model }),
+    ...(models == null ? {} : { models }),
+  };
 }
 
 function findSettingsFile(configsDir: string | undefined): string | undefined {
@@ -66,4 +76,23 @@ function readOptionalString(
     throw new TypeError(`"${key}" must be a non-empty string: ${file}`);
   }
   return value.trim();
+}
+
+function readOptionalStrings(
+  value: unknown,
+  file: string,
+  key: string,
+): readonly string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) {
+    throw new TypeError(`"${key}" must contain non-empty strings: ${file}`);
+  }
+  const strings = value.filter(
+    (entry: unknown): entry is string =>
+      typeof entry === 'string' && entry.trim() !== '',
+  );
+  if (strings.length !== value.length) {
+    throw new TypeError(`"${key}" must contain non-empty strings: ${file}`);
+  }
+  return strings.map((entry) => entry.trim());
 }

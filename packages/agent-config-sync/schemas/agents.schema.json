@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unpkg.com/@pixpilot/agent-config-sync/schemas/agents.schema.json",
+  "title": "Agent launch settings",
+  "description": "Portable model defaults for coding-agent-sandbox sessions.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "URL of the JSON Schema used by editor validation and completion.",
+      "type": "string",
+      "format": "uri"
+    },
+    "$defaults": {
+      "$ref": "#/$defs/agentSettings"
+    },
+    "claude": {
+      "$ref": "#/$defs/agentSettings"
+    },
+    "codex": {
+      "$ref": "#/$defs/agentSettings"
+    },
+    "copilot": {
+      "$ref": "#/$defs/agentSettings"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "agentSettings": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "description": "Model name passed directly to the selected agent CLI.",
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "models": {
+          "description": "Model names offered by integrations such as a model picker.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

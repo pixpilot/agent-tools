@@ -16,8 +16,9 @@ configs/
 JSON/JSONC object keyed by server name; `$defaults.startupTimeoutSec` applies
 one startup limit to every server:
 
-```json
+```jsonc
 {
+  "$schema": "https://unpkg.com/@pixpilot/agent-config-sync/schemas/mcp.schema.json",
   "$defaults": {
     "startupTimeoutSec": 120
   },
@@ -27,6 +28,12 @@ one startup limit to every server:
   }
 }
 ```
+
+Add the `$schema` URL to `mcp.jsonc` or `agents.jsonc` for editor validation and
+completion. The schemas are published with this package at:
+
+- `https://unpkg.com/@pixpilot/agent-config-sync/schemas/mcp.schema.json`
+- `https://unpkg.com/@pixpilot/agent-config-sync/schemas/agents.schema.json`
 
 The synchronizer writes that setting as Codex's per-server
 `startup_timeout_sec` and enables Codex's full startup wait, Claude Code's

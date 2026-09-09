@@ -34,13 +34,20 @@ describe('readAgentSettings', () => {
   it('should read the model for the selected agent only', () => {
     const root = configsDir({
       'agents.jsonc': `{
+        "$schema": "https://example.test/agents.schema.json",
         // per-agent model names
-        "codex": { "model": "gpt-5.1-codex" },
+        "codex": {
+          "model": "gpt-5.1-codex",
+          "models": ["gpt-5.1-codex", "gpt-5.1-codex-mini"],
+        },
         "claude": { "model": "opus" },
       }`,
     });
 
-    expect(readAgentSettings(root, 'codex')).toEqual({ model: 'gpt-5.1-codex' });
+    expect(readAgentSettings(root, 'codex')).toEqual({
+      model: 'gpt-5.1-codex',
+      models: ['gpt-5.1-codex', 'gpt-5.1-codex-mini'],
+    });
     expect(readAgentSettings(root, 'claude')).toEqual({ model: 'opus' });
     expect(readAgentSettings(root, 'copilot')).toEqual({});
   });
@@ -53,6 +60,14 @@ describe('readAgentSettings', () => {
 
     expect(readAgentSettings(root, 'copilot')).toEqual({ model: 'shared' });
     expect(readAgentSettings(root, 'codex')).toEqual({ model: 'own' });
+  });
+
+  it('should fall back to default model choices when an agent has none', () => {
+    const root = configsDir({
+      'agents.json': '{ "$defaults": { "models": ["shared"] }, "codex": {} }',
+    });
+
+    expect(readAgentSettings(root, 'codex')).toEqual({ models: ['shared'] });
   });
 
   it('should prefer agents.jsonc over agents.json', () => {
@@ -77,5 +92,11 @@ describe('readAgentSettings', () => {
     expect(() =>
       readAgentSettings(configsDir({ 'agents.json': '{ "codex": "opus" }' }), 'codex'),
     ).toThrow(/"codex" must contain an object/u);
+    expect(() =>
+      readAgentSettings(
+        configsDir({ 'agents.json': '{ "codex": { "models": ["ok", ""] } }' }),
+        'codex',
+      ),
+    ).toThrow(/"models" must contain non-empty strings/u);
   });
 });

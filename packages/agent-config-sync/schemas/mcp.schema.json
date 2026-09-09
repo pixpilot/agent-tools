@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unpkg.com/@pixpilot/agent-config-sync/schemas/mcp.schema.json",
+  "title": "Portable MCP configuration",
+  "description": "MCP servers synchronized to Claude Code, Codex, and Copilot CLI.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "URL of the JSON Schema used by editor validation and completion.",
+      "type": "string",
+      "format": "uri"
+    },
+    "$defaults": {
+      "$ref": "#/$defs/defaults"
+    }
+  },
+  "patternProperties": {
+    "^(?!\\$(?:defaults|schema)$).+$": {
+      "$ref": "#/$defs/server"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "startupTimeoutSec": {
+          "description": "Positive server startup timeout in seconds.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["startupTimeoutSec"],
+      "additionalProperties": false
+    },
+    "server": {
+      "description": "One MCP server. Sensitive fields are removed before synchronization.",
+      "type": "object",
+      "properties": {
+        "command": {
+          "description": "Command used to start a local stdio server.",
+          "type": "string"
+        },
+        "args": {
+          "description": "Arguments passed to a local stdio server command.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "url": {
+          "description": "URL of a remote MCP server.",
+          "type": "string",
+          "format": "uri"
+        },
+        "type": {
+          "description": "Optional MCP transport type.",
+          "enum": ["stdio", "http", "sse"]
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

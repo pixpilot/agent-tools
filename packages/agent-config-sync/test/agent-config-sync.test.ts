@@ -229,6 +229,21 @@ describe('syncAgentConfigs', () => {
     expect(copilot.mcpServers.files.timeout).toBe(120000);
   });
 
+  it('should ignore JSON Schema metadata when syncing MCP servers', () => {
+    const source = path.join(root, 'source');
+    const home = path.join(root, 'home');
+    write(
+      'source/mcp.jsonc',
+      '{ "$schema": "https://example.test/mcp.schema.json", "files": { "command": "npx" } }',
+    );
+
+    syncAgentConfigs({ configDirectory: source, agents: ['codex'], homeDirectory: home });
+
+    const codex = fs.readFileSync(path.join(home, '.codex/config.toml'), 'utf8');
+    expect(codex).toContain('[mcp_servers."files"]');
+    expect(codex).not.toContain('mcp_servers."$schema"');
+  });
+
   it('should forward the sandbox proxy and npm cache to every Codex MCP server', () => {
     const source = path.join(root, 'source');
     const home = path.join(root, 'home');

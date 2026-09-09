@@ -141,14 +141,18 @@ An optional `agents.jsonc` (or `agents.json`) in `--configs-dir` sets per-agent 
 
 ```jsonc
 {
+  "$schema": "https://unpkg.com/@pixpilot/agent-config-sync/schemas/agents.schema.json",
   // Used by any agent without its own entry.
   "$defaults": { "model": "gpt-5.1-codex" },
   "claude": { "model": "opus" },
-  "codex": { "model": "gpt-5.1-codex" },
+  "codex": {
+    "model": "gpt-5.1-codex",
+    "models": ["gpt-5.1-codex", "gpt-5.1-codex-mini"],
+  },
 }
 ```
 
-Precedence is `--model` > the agent’s own entry > `$defaults`. Model names are agent-specific and passed through unvalidated.
+Precedence is `--model` > the agent’s own entry > `$defaults`. `models` is an optional list for integrations (such as a model picker); it does not affect launch selection. Model names are agent-specific and passed through unvalidated.
 
 ## Authentication
 
