@@ -1,5 +1,31 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.6.0
+
+### Minor Changes
+
+- add agent prompts and portable MCP startup timeouts
+- harden sandbox isolation and sync agent config
+- harden sandbox isolation and sync agent config
+- replace --offline with a tri-state network mode
+- route sessions through a per-session egress proxy
+- add the per-session egress proxy image
+- declare per-agent and per-environment egress hosts
+
+### Patch Changes
+
+- format
+- format
+- formatting
+- allow the repository's own Git remotes in strict mode
+- 1380575: new release
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies [1380575]
+  - @pixpilot/agent-config-sync@0.4.0
+
 ## 1.5.0
 
 ### Minor Changes
