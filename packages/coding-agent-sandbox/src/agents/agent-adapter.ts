@@ -56,6 +56,9 @@ export abstract class AgentAdapter {
     return [
       ...parts,
       extraArgs,
+      // The prompt is positional, so one starting with `-` is parsed as an
+      // unknown flag; `--` ends option parsing before it is read.
+      initialPrompt?.startsWith('-') === true ? '--' : undefined,
       initialPrompt == null || initialPrompt === ''
         ? undefined
         : quoteShellArgument(initialPrompt),

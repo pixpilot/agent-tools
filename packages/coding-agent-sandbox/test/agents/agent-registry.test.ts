@@ -65,6 +65,14 @@ describe('agent launch commands', () => {
     }
   });
 
+  it('should end option parsing before a prompt that starts with a dash', () => {
+    for (const agent of listAgents()) {
+      expect(agent.launchCommand({ fullAccess: false, prompt: '- add a navbar' })).toBe(
+        `${agent.binary} -- '- add a navbar'`,
+      );
+    }
+  });
+
   it('should ignore a blank initial prompt', () => {
     expect(getAgent('codex').launchCommand({ fullAccess: false, prompt: '  ' })).toBe(
       'codex',
