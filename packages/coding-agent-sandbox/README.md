@@ -61,34 +61,35 @@ portable configs directory                                  -> /coding-agent-san
 
 ## CLI options
 
-| Option                    | Description                                                                 |
-| ------------------------- | --------------------------------------------------------------------------- |
-| `--agent <agent>`         | `claude`, `codex` or `copilot`                                              |
-| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)       |
-| `--task <name>`           | Task name; drives the branch and worktree names                             |
+| Option                    | Description                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------- |
+| `--agent <agent>`         | `claude`, `codex` or `copilot`                                                              |
+| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                       |
+| `--task <name>`           | Task name; drives the branch and worktree names                                             |
 | `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules |
-| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                |
-| `--worktree <path>`       | Override the worktree location                                              |
-| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)        |
-| `--image <tag>`           | Use an existing image instead of building the bundled one                   |
-| `--prompt <text>`         | Initial prompt passed safely to the selected agent                          |
-| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`                        |
-| `--agent-args <args>`     | Trusted shell text appended to the agent command                            |
-| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                    |
-| `--no-install`            | Skip project dependency installation                                        |
-| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                     |
-| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)               |
-| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                            |
-| `--rebuild-image`         | Rebuild the shared development image                                        |
-| `--login`                 | Force the agent login flow before launching                                 |
-| `--dry-run`               | Preview Docker arguments with environment values omitted                    |
-| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                         |
-| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                  |
-| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                             |
-| `--memory <size>`         | Limit container memory (unconstrained by default)                           |
-| `--offline`               | Deprecated alias for `--network none`                                       |
-| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset     |
-| `--list-agents`           | List the supported agents and exit                                          |
+| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                                |
+| `--worktree <path>`       | Override the worktree location                                                              |
+| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                        |
+| `--image <tag>`           | Use an existing image instead of building the bundled one                                   |
+| `--prompt <text>`         | Initial prompt passed safely to the selected agent                                          |
+| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`                                        |
+| `--agent-args <args>`     | Trusted shell text appended to the agent command                                            |
+| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                                    |
+| `--no-install`            | Skip project dependency installation                                                        |
+| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                                     |
+| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                               |
+| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                            |
+| `--rebuild-image`         | Rebuild the shared development image                                                        |
+| `--login`                 | Force the agent login flow before launching                                                 |
+| `--dry-run`               | Preview Docker arguments with environment values omitted                                    |
+| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                         |
+| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                  |
+| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                             |
+| `--memory <size>`         | Limit container memory (unconstrained by default)                                           |
+| `--pids-limit <count>`    | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)             |
+| `--offline`               | Deprecated alias for `--network none`                                                       |
+| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset                     |
+| `--list-agents`           | List the supported agents and exit                                                          |
 
 ### Examples
 
@@ -143,7 +144,7 @@ An optional `agents.jsonc` (or `agents.json`) in `--configs-dir` sets per-agent 
   // Used by any agent without its own entry.
   "$defaults": { "model": "gpt-5.1-codex" },
   "claude": { "model": "opus" },
-  "codex": { "model": "gpt-5.1-codex" }
+  "codex": { "model": "gpt-5.1-codex" },
 }
 ```
 
@@ -246,8 +247,16 @@ network first, or select a cached `--image`. It rejects `--login`,
 requests without a network. Existing mounted state remains available and writable.
 
 Containers run with `--cap-drop=ALL`, `--security-opt=no-new-privileges` and a
-PID limit, as non-root `node`. CPU and memory are unconstrained unless you pass
-`--cpus` or `--memory`. No inbound ports or Docker socket are published.
+`--pids-limit` of 4096, as non-root `node`. CPU and memory are unconstrained
+unless you pass `--cpus` or `--memory`. No inbound ports or Docker socket are
+published.
+
+The PID limit counts Linux _threads_, not processes: an idle agent runtime
+already holds several hundred tasks, and a monorepo build fans out one worker
+per core on top of that. Too low a ceiling surfaces as `EAGAIN` /
+`Resource temporarily unavailable (os error 11)` from `turbo`, `tsc`, `eslint`
+or `pnpm`, not as an obvious limit error. Raise it with `--pids-limit` if a
+build still hits the ceiling.
 
 The CLI does not forward host API keys. Dry-run output omits all environment values, including agent commands. Never put secrets in `--agent-args`, repository URLs, paths or task names: arguments can appear in process listings or diagnostics. Terminal output uses inherited stdio and is **not sanitized**; an agent or subprocess may print sensitive data. Any future API-key mode must pass only the active agent's required variables without embedding their values in command arguments or logs.
 

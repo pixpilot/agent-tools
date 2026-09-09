@@ -7,8 +7,13 @@ import {
 import { toMountSource } from '../utils/normalize-path';
 import { buildSandboxLabels } from './build-sandbox-labels';
 
-/** Generous enough for package managers and test runners, low enough to cap a fork bomb. */
-const AGENT_PIDS_LIMIT = 512;
+/**
+ * The cgroup v2 `pids` controller counts threads, not processes, so an agent
+ * runtime idling at ~450 tasks leaves almost nothing for a monorepo build that
+ * fans out one worker per core. This is high enough for that, and still low
+ * enough that a fork bomb hits a ceiling instead of the Docker VM.
+ */
+const AGENT_PIDS_LIMIT = '4096';
 
 /**
  * Builds the full `docker run` argument list for a session. Pure and
@@ -39,7 +44,7 @@ export function buildRunArgs(plan: SessionPlan): string[] {
     '--cap-drop=ALL',
     '--security-opt=no-new-privileges',
     '--pids-limit',
-    String(AGENT_PIDS_LIMIT),
+    plan.pidsLimit ?? AGENT_PIDS_LIMIT,
   );
 
   // Build tools and test suites are the workload, so limits stay opt-in.

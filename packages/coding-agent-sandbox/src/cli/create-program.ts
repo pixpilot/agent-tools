@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { listAgents } from '../agents/agent-registry';
 import { NETWORK_MODES, parseNetworkMode } from '../network/network-mode';
 import { parseBoolean } from './parse-boolean';
+import { parsePidsLimit } from './parse-pids-limit';
 
 /** Builds the Commander program; kept separate so it can be unit tested. */
 export function createProgram(version: string): Command {
@@ -53,6 +54,11 @@ export function createProgram(version: string): Command {
     )
     .option('--cpus <count>', 'Limit container CPUs (unconstrained by default)')
     .option('--memory <size>', 'Limit container memory (unconstrained by default)')
+    .option(
+      '--pids-limit <count>',
+      'Limit container PIDs/threads (4096 by default; --pids-limit=-1 for unlimited)',
+      parsePidsLimit,
+    )
     .option('--offline', 'Deprecated alias for --network none')
     .option('--no-configs', 'Skip skills, prompts, MCP and global-rules provisioning')
     .option('--no-git-mount', 'Disable isolated Git support inside the container')

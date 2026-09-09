@@ -57,8 +57,14 @@ describe('buildRunArgs', () => {
 
       expect(args).toContain('--cap-drop=ALL');
       expect(args).toContain('--security-opt=no-new-privileges');
-      expect(args[args.indexOf('--pids-limit') + 1]).toBe('512');
+      expect(args[args.indexOf('--pids-limit') + 1]).toBe('4096');
     }
+  });
+
+  it('should pass through an explicit PID limit', () => {
+    const args = buildRunArgs(makePlan({ pidsLimit: '8192' }));
+
+    expect(args[args.indexOf('--pids-limit') + 1]).toBe('8192');
   });
 
   it('should leave CPU and memory unconstrained unless asked', () => {

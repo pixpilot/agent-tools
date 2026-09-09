@@ -279,7 +279,7 @@ Applied to both the agent container and the proxy container:
 
 - `--cap-drop=ALL`
 - `--security-opt=no-new-privileges`
-- `--pids-limit` (512 for the agent, 64 for the proxy)
+- `--pids-limit` (4096 for the agent, 64 for the proxy; `--pids-limit` overrides the agent's)
 
 Both are close to no-ops for a process already running as non-root `node` with no
 file capabilities available — which is exactly why they are cheap to add and worth
@@ -465,12 +465,12 @@ a proxy tweak from forcing a rebuild of the heavy agent image.
 
 In `buildRunArgs`:
 
-| Mode              | Flags                                                              |
-| ----------------- | ------------------------------------------------------------------ |
-| `strict` / `open` | `--network <net-internal>`                                         |
-| `none`            | `--network none --pull never`                                      |
-| all               | `--cap-drop=ALL --security-opt=no-new-privileges --pids-limit 512` |
-| when provided     | `--cpus <n>`, `--memory <size>`                                    |
+| Mode              | Flags                                                               |
+| ----------------- | ------------------------------------------------------------------- |
+| `strict` / `open` | `--network <net-internal>`                                          |
+| `none`            | `--network none --pull never`                                       |
+| all               | `--cap-drop=ALL --security-opt=no-new-privileges --pids-limit 4096` |
+| when provided     | `--cpus <n>`, `--memory <size>`, `--pids-limit <n>`                 |
 
 In `buildSessionEnv`, for the proxying modes:
 

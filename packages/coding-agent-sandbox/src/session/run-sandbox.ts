@@ -84,8 +84,7 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   const session: SandboxOptions = {
     ...options,
     model:
-      options.model ??
-      readAgentSettings(options.configsDir, agent.id as AgentId).model,
+      options.model ?? readAgentSettings(options.configsDir, agent.id as AgentId).model,
   };
 
   try {
@@ -177,6 +176,7 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
       networkName: proxied ? names.internal : undefined,
       cpus: options.cpus,
       memory: options.memory,
+      pidsLimit: options.pidsLimit,
     };
 
     if (options.dryRun) {

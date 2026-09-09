@@ -47,7 +47,8 @@ describe('readAgentSettings', () => {
 
   it('should fall back to $defaults when the agent has no entry', () => {
     const root = configsDir({
-      'agents.json': '{ "$defaults": { "model": "shared" }, "codex": { "model": "own" } }',
+      'agents.json':
+        '{ "$defaults": { "model": "shared" }, "codex": { "model": "own" } }',
     });
 
     expect(readAgentSettings(root, 'copilot')).toEqual({ model: 'shared' });
@@ -64,11 +65,14 @@ describe('readAgentSettings', () => {
   });
 
   it('should reject a malformed settings file', () => {
+    expect(() => readAgentSettings(configsDir({ 'agents.json': '[]' }), 'codex')).toThrow(
+      /must contain an object/u,
+    );
     expect(() =>
-      readAgentSettings(configsDir({ 'agents.json': '[]' }), 'codex'),
-    ).toThrow(/must contain an object/u);
-    expect(() =>
-      readAgentSettings(configsDir({ 'agents.json': '{ "codex": { "model": 5 } }' }), 'codex'),
+      readAgentSettings(
+        configsDir({ 'agents.json': '{ "codex": { "model": 5 } }' }),
+        'codex',
+      ),
     ).toThrow(/"model" must be a non-empty string/u);
     expect(() =>
       readAgentSettings(configsDir({ 'agents.json': '{ "codex": "opus" }' }), 'codex'),

@@ -47,11 +47,7 @@ function findSettingsFile(configsDir: string | undefined): string | undefined {
   );
 }
 
-function readObject(
-  value: unknown,
-  file: string,
-  key?: string,
-): Record<string, unknown> {
+function readObject(value: unknown, file: string, key?: string): Record<string, unknown> {
   if (value == null || Array.isArray(value) || typeof value !== 'object') {
     throw new TypeError(
       `${key == null ? 'Agent settings' : `"${key}"`} must contain an object: ${file}`,

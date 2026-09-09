@@ -100,6 +100,8 @@ export interface SandboxOptions {
   cpus?: string | undefined;
   /** `docker run --memory` value; unconstrained when unset. */
   memory?: string | undefined;
+  /** `docker run --pids-limit` value; a hardened default applies when unset. */
+  pidsLimit?: string | undefined;
   yes: boolean;
 }
 
@@ -136,4 +138,5 @@ export interface SessionPlan {
   networkName?: string | undefined;
   cpus?: string | undefined;
   memory?: string | undefined;
+  pidsLimit?: string | undefined;
 }
