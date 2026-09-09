@@ -20,7 +20,10 @@ export class CodexAgent extends AgentAdapter {
 
   launchCommand(options: AgentLaunchOptions): string {
     return this.buildCommand(
-      ['codex', options.fullAccess ? '--dangerously-bypass-approvals-and-sandbox' : undefined],
+      [
+        'codex',
+        options.fullAccess ? '--dangerously-bypass-approvals-and-sandbox' : undefined,
+      ],
       options,
     );
   }

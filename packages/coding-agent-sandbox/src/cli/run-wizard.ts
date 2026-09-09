@@ -81,7 +81,7 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
   const requestedPrompt = initial.prompt?.trim();
   const prompt =
     requestedPrompt != null && requestedPrompt !== ''
-      ? initial.prompt ?? ''
+      ? (initial.prompt ?? '')
       : await input({
           message: 'Initial prompt for the agent (optional)',
         });

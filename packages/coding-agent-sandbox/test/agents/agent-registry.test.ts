@@ -59,14 +59,16 @@ describe('agent launch commands', () => {
 
   it('should append a safely quoted initial prompt last', () => {
     for (const agent of listAgents()) {
-      expect(agent.launchCommand({ fullAccess: false, prompt: "Fix O'Reilly login" })).toBe(
-        `${agent.binary} 'Fix O'\\''Reilly login'`,
-      );
+      expect(
+        agent.launchCommand({ fullAccess: false, prompt: "Fix O'Reilly login" }),
+      ).toBe(`${agent.binary} 'Fix O'\\''Reilly login'`);
     }
   });
 
   it('should ignore a blank initial prompt', () => {
-    expect(getAgent('codex').launchCommand({ fullAccess: false, prompt: '  ' })).toBe('codex');
+    expect(getAgent('codex').launchCommand({ fullAccess: false, prompt: '  ' })).toBe(
+      'codex',
+    );
   });
 
   it('should ignore blank extra arguments', () => {

@@ -56,7 +56,9 @@ export abstract class AgentAdapter {
     return [
       ...parts,
       extraArgs,
-      initialPrompt == null || initialPrompt === '' ? undefined : quoteShellArgument(initialPrompt),
+      initialPrompt == null || initialPrompt === ''
+        ? undefined
+        : quoteShellArgument(initialPrompt),
     ]
       .filter((part): part is string => part != null && part.trim() !== '')
       .join(' ');

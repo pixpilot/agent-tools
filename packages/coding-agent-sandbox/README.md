@@ -71,7 +71,7 @@ portable configs directory                                  -> /coding-agent-san
 | `--worktree <path>`       | Override the worktree location                                              |
 | `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)        |
 | `--image <tag>`           | Use an existing image instead of building the bundled one                   |
-| `--prompt <text>`         | Initial prompt passed safely to the selected agent                           |
+| `--prompt <text>`         | Initial prompt passed safely to the selected agent                          |
 | `--agent-args <args>`     | Trusted shell text appended to the agent command                            |
 | `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                    |
 | `--no-install`            | Skip project dependency installation                                        |
