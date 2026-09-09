@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createAgentConfigSnapshot,
   extractCodexMcpServers,
@@ -20,6 +20,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   fs.rmSync(root, { recursive: true, force: true });
 });
 
@@ -219,13 +220,73 @@ describe('syncAgentConfigs', () => {
     });
 
     const codex = fs.readFileSync(path.join(home, '.codex/config.toml'), 'utf8');
-    expect(codex).toContain('mcp_optional_startup_grace_ms = 0');
     expect(codex).toContain('startup_timeout_sec = 120');
+    expect(codex).not.toContain('mcp_optional_startup_grace_ms');
 
     const copilot = JSON.parse(
       fs.readFileSync(path.join(home, '.copilot/mcp-config.json'), 'utf8'),
     ) as { mcpServers: { files: { timeout: number } } };
     expect(copilot.mcpServers.files.timeout).toBe(120000);
+  });
+
+  it('should forward the sandbox proxy and npm cache to every Codex MCP server', () => {
+    const source = path.join(root, 'source');
+    const home = path.join(root, 'home');
+    vi.stubEnv('HTTP_PROXY', 'http://sandbox-proxy:8888');
+    vi.stubEnv('HTTPS_PROXY', 'http://sandbox-proxy:8888');
+    vi.stubEnv('NO_PROXY', 'localhost,127.0.0.1');
+    vi.stubEnv('NODE_USE_ENV_PROXY', '1');
+    vi.stubEnv('NPM_CONFIG_CACHE', '/cache/npm');
+    write(
+      'source/mcp.jsonc',
+      '{ "files": { "command": "npx", "args": ["-y", "server"] } }',
+    );
+
+    syncAgentConfigs({ configDirectory: source, agents: ['codex'], homeDirectory: home });
+
+    const codex = fs.readFileSync(path.join(home, '.codex/config.toml'), 'utf8');
+    expect(codex).toContain('"HTTP_PROXY" = "http://sandbox-proxy:8888"');
+    expect(codex).toContain('"HTTPS_PROXY" = "http://sandbox-proxy:8888"');
+    expect(codex).toContain('"NO_PROXY" = "localhost,127.0.0.1"');
+    expect(codex).toContain('"NODE_USE_ENV_PROXY" = "1"');
+    expect(codex).toContain('"NPM_CONFIG_CACHE" = "/cache/npm"');
+  });
+
+  it('should omit the Codex env table outside a proxied sandbox', () => {
+    const source = path.join(root, 'source');
+    const home = path.join(root, 'home');
+    for (const key of ['HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'NPM_CONFIG_CACHE']) {
+      vi.stubEnv(key, '');
+    }
+    vi.stubEnv('NODE_USE_ENV_PROXY', '');
+    write(
+      'source/mcp.jsonc',
+      '{ "files": { "command": "npx", "args": ["-y", "server"] } }',
+    );
+
+    syncAgentConfigs({ configDirectory: source, agents: ['codex'], homeDirectory: home });
+
+    expect(fs.readFileSync(path.join(home, '.codex/config.toml'), 'utf8')).not.toContain(
+      'env =',
+    );
+  });
+
+  it('should drop a pinned optional startup grace left by an earlier sync', () => {
+    const source = path.join(root, 'source');
+    const home = path.join(root, 'home');
+    write('source/mcp.jsonc', '{ "files": { "command": "npx" } }');
+    write(
+      'home/.codex/config.toml',
+      'mcp_optional_startup_grace_ms = 0\n\nmodel = "gpt-5"\n\n[tui]\nmcp_optional_startup_grace_ms = 0\n',
+    );
+
+    syncAgentConfigs({ configDirectory: source, agents: ['codex'], homeDirectory: home });
+
+    const codex = fs.readFileSync(path.join(home, '.codex/config.toml'), 'utf8');
+    // The pin and the blank line under it are gone, so the file now opens with model.
+    expect(codex).toMatch(/^model = "gpt-5"/u);
+    // Only the top-level pin is ours to remove; a table's own key stays put.
+    expect(codex).toContain('[tui]\nmcp_optional_startup_grace_ms = 0');
   });
 });
 

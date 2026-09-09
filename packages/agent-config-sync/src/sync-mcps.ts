@@ -1,6 +1,7 @@
 import type { AgentId } from './types.ts';
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { parseJsonc } from './jsonc.ts';
 
 const JSON_INDENT_SPACES = 2;
@@ -8,6 +9,26 @@ const PORTABLE_DEFAULTS_KEY = '$defaults';
 const STARTUP_TIMEOUT_KEY = 'startupTimeoutSec';
 const CODEX_OPTIONAL_STARTUP_GRACE_KEY = 'mcp_optional_startup_grace_ms';
 const MILLISECONDS_PER_SECOND = 1_000;
+
+/**
+ * Environment a stdio MCP server needs to reach the network from inside the
+ * sandbox. Claude Code hands child processes the full environment, but Codex
+ * starts them with a fixed core allowlist, so the session proxy and the shared
+ * npm cache have to be re-attached per server: without them `npx` resolves DNS
+ * itself and dies with EAI_AGAIN on the gateway-less internal network. Codex
+ * merges this map into its allowlist, so PATH and HOME still reach the server.
+ */
+const FORWARDED_MCP_ENV_KEYS = [
+  'HTTP_PROXY',
+  'http_proxy',
+  'HTTPS_PROXY',
+  'https_proxy',
+  'NO_PROXY',
+  'no_proxy',
+  'NODE_USE_ENV_PROXY',
+  'NPM_CONFIG_CACHE',
+] as const;
+
 type McpServers = Record<string, Record<string, unknown>>;
 
 interface McpConfig {
@@ -36,17 +57,19 @@ export function syncMcps(
 
   if (agent === 'codex') {
     const existing = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : '';
-    let contents = replaceCodexMcpServers(
-      existing,
-      withServerTimeout(config.servers, 'startup_timeout_sec', config.startupTimeoutSec),
+    // Codex decides for itself when to give up on a pending optional server;
+    // earlier versions of this sync pinned that to 0, so drop what they left.
+    const contents = replaceCodexMcpServers(
+      removeTopLevelTomlSetting(existing, CODEX_OPTIONAL_STARTUP_GRACE_KEY),
+      withServerEnv(
+        withServerTimeout(
+          config.servers,
+          'startup_timeout_sec',
+          config.startupTimeoutSec,
+        ),
+        readForwardedMcpEnv(),
+      ),
     );
-    if (config.startupTimeoutSec != null) {
-      contents = replaceTopLevelTomlSetting(
-        contents,
-        CODEX_OPTIONAL_STARTUP_GRACE_KEY,
-        0,
-      );
-    }
     fs.writeFileSync(target, contents);
     return [target];
   }
@@ -127,6 +150,24 @@ function withServerTimeout(
   );
 }
 
+/** Reads the sandbox network settings this sync process was itself started with. */
+function readForwardedMcpEnv(): Record<string, string> {
+  return Object.fromEntries(
+    FORWARDED_MCP_ENV_KEYS.map((key) => [key, process.env[key]]).filter(
+      (entry): entry is [string, string] => entry[1] != null && entry[1] !== '',
+    ),
+  );
+}
+
+/** Attaches one shared environment to every server, changing nothing when empty. */
+function withServerEnv(servers: McpServers, env: Record<string, string>): McpServers {
+  if (Object.keys(env).length === 0) return servers;
+
+  return Object.fromEntries(
+    Object.entries(servers).map(([name, server]) => [name, { ...server, env }]),
+  );
+}
+
 function syncClaudeStartupTimeout(settingsFile: string, timeoutSec: number): void {
   const settings = readJsonObject(settingsFile);
   const existingEnv = settings['env'];
@@ -193,15 +234,25 @@ export function replaceCodexMcpServers(toml: string, servers: McpServers): strin
     : `${prefix}${prefix === '' ? '' : '\n\n'}${generated}\n`;
 }
 
-function replaceTopLevelTomlSetting(toml: string, key: string, value: number): string {
-  const lines = toml.split(/\r?\n/u);
+/** Drops a top-level setting, and the blank line under it, leaving tables alone. */
+function removeTopLevelTomlSetting(toml: string, key: string): string {
   const settingPattern = new RegExp(`^\\s*${key}\\s*=`, 'u');
-  const retained = lines.filter((line) => !settingPattern.test(line));
-  const firstTable = retained.findIndex((line) => /^\s*\[/u.test(line));
-  const index = firstTable < 0 ? retained.length : firstTable;
-  retained.splice(index, 0, `${key} = ${value}`, '');
+  const retained: string[] = [];
+  let inTopLevel = true;
+  let removedPrevious = false;
 
-  return `${retained.join('\n').replace(/\n+$/u, '')}\n`;
+  for (const line of toml.split(/\r?\n/u)) {
+    if (/^\s*\[/u.test(line)) inTopLevel = false;
+
+    if (inTopLevel && settingPattern.test(line)) {
+      removedPrevious = true;
+    } else if (!removedPrevious || line.trim() !== '') {
+      removedPrevious = false;
+      retained.push(line);
+    }
+  }
+
+  return retained.join('\n');
 }
 
 function readJsonObject(filePath: string): Record<string, unknown> {
