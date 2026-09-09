@@ -1,5 +1,17 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.9.0
+
+### Minor Changes
+
+- add support for `--pids-limit` option
+- support model defaults and proxy auditing
+
+### Patch Changes
+
+- Updated dependencies
+  - @pixpilot/agent-config-sync@0.7.0
+
 ## 1.8.0
 
 ### Minor Changes
