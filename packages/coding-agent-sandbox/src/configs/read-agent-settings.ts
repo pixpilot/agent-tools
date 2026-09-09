@@ -88,8 +88,7 @@ function readOptionalStrings(
     throw new TypeError(`"${key}" must contain non-empty strings: ${file}`);
   }
   const strings = value.filter(
-    (entry: unknown): entry is string =>
-      typeof entry === 'string' && entry.trim() !== '',
+    (entry: unknown): entry is string => typeof entry === 'string' && entry.trim() !== '',
   );
   if (strings.length !== value.length) {
     throw new TypeError(`"${key}" must contain non-empty strings: ${file}`);
