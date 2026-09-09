@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.8.0
+
+### Minor Changes
+
+- handle prompts starting with a dash
+
 ## 1.7.0
 
 ### Minor Changes
