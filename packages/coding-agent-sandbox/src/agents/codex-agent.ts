@@ -18,10 +18,10 @@ export class CodexAgent extends AgentAdapter {
     hint: 'Enable device-code login in your ChatGPT security settings or workspace permissions, then follow the printed link and code.',
   };
 
-  launchCommand({ fullAccess, extraArgs }: AgentLaunchOptions): string {
+  launchCommand(options: AgentLaunchOptions): string {
     return this.buildCommand(
-      ['codex', fullAccess ? '--dangerously-bypass-approvals-and-sandbox' : undefined],
-      extraArgs,
+      ['codex', options.fullAccess ? '--dangerously-bypass-approvals-and-sandbox' : undefined],
+      options,
     );
   }
 

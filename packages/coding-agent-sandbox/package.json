@@ -71,7 +71,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path ../../.prettierignore",
-    "agent:start": "pnpm build && wt -d . pwsh -NoExit -Command node ./dist/cli.js --network open"
+    "agent:start": "pnpm build && wt -d . pwsh -NoExit -Command node ./dist/cli.js"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.9.0",

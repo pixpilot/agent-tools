@@ -1,4 +1,4 @@
-import type { ConfigComponent, ConfigDirectoryInfo } from './types';
+import type { ConfigComponent, ConfigDirectoryInfo } from './types.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 

@@ -1,12 +1,12 @@
-import type { AgentId, ConfigSnapshot } from './types';
+import type { AgentId, ConfigSnapshot } from './types.ts';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { getAgentConfigPaths } from './agent-config-paths';
-import { inspectConfigDirectory } from './config-directory';
-import { parseJsonc } from './jsonc';
-import { sanitizeMcpServers } from './sync-mcps';
-import { extractRules } from './sync-rules';
+import { getAgentConfigPaths } from './agent-config-paths.ts';
+import { inspectConfigDirectory } from './config-directory.ts';
+import { parseJsonc } from './jsonc.ts';
+import { sanitizeMcpServers } from './sync-mcps.ts';
+import { extractRules } from './sync-rules.ts';
 
 const JSON_INDENT_SPACES = 2;
 /** Creates a temporary portable snapshot containing no credentials or token values. */

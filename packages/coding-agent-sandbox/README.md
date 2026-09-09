@@ -30,6 +30,7 @@ A bare invocation asks, in order:
 | Which coding agent should run this task?    | Claude Code                                                                    |
 | Main Git repository path                    | The repository containing the current directory                                |
 | Task name                                   | _(required)_                                                                   |
+| Initial prompt for the agent                | _(optional)_                                                                   |
 | Let the agent act without approval prompts? | Yes                                                                            |
 | Enable isolated Git history and commits?    | Yes                                                                            |
 
@@ -70,6 +71,7 @@ portable configs directory                                  -> /coding-agent-san
 | `--worktree <path>`       | Override the worktree location                                              |
 | `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)        |
 | `--image <tag>`           | Use an existing image instead of building the bundled one                   |
+| `--prompt <text>`         | Initial prompt passed safely to the selected agent                           |
 | `--agent-args <args>`     | Trusted shell text appended to the agent command                            |
 | `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                    |
 | `--no-install`            | Skip project dependency installation                                        |
@@ -97,6 +99,10 @@ npx @pixpilot/coding-agent-sandbox --agent copilot --repo Z:\github\roleclick --
 
 # Branch off a release line instead of HEAD
 npx @pixpilot/coding-agent-sandbox --agent codex --task "hotfix login" --base release/2.4
+
+# Start Codex with an initial task prompt
+npx @pixpilot/coding-agent-sandbox --agent codex --task "fix login" \
+  --prompt "Investigate and fix the login failure. Run relevant tests."
 
 # Keep approval prompts on, and pass an agent flag through
 npx @pixpilot/coding-agent-sandbox --agent claude --task "risky refactor" \

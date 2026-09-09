@@ -12,16 +12,27 @@ configs/
   GLOBAL-AI-RULES.md
 ```
 
-`mcp.jsonc` is a JSON/JSONC object keyed by server name:
+`mcp.jsonc` is the source of truth for every supported agent. It is a
+JSON/JSONC object keyed by server name; `$defaults.startupTimeoutSec` applies
+one startup limit to every server:
 
 ```json
 {
+  "$defaults": {
+    "startupTimeoutSec": 120
+  },
   "filesystem": {
     "command": "npx",
     "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
   }
 }
 ```
+
+The synchronizer writes that setting as Codex's per-server
+`startup_timeout_sec` and enables Codex's full startup wait, Claude Code's
+global `MCP_TIMEOUT` environment variable, and Copilot CLI's per-server
+`timeout` in milliseconds. Copilot applies its timeout to both tool discovery
+and tool calls because it has no separate startup setting.
 
 ```sh
 agent-config-sync --configs-dir ./configs

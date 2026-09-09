@@ -1,8 +1,8 @@
-import type { AgentId } from './types';
+import type { AgentId } from './types.ts';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { syncManagedFiles } from './sync-directory';
+import { syncManagedFiles } from './sync-directory.ts';
 
 /** Synchronizes prompts in the filename format understood by one agent. */
 export function syncPrompts(source: string, target: string, agent: AgentId): string[] {

@@ -53,7 +53,7 @@ describe('runWizard', () => {
   it('should collect a full strict session', async () => {
     queue({
       select: ['strict', 'codex', true],
-      input: ['/work/app', 'fix login'],
+      input: ['/work/app', 'fix login', ''],
       confirm: [false],
     });
 
@@ -73,7 +73,7 @@ describe('runWizard', () => {
   it('should not ask for a config directory when there is no network', async () => {
     queue({
       select: ['none', 'claude', false],
-      input: ['/work/app', 'fix login'],
+      input: ['/work/app', 'fix login', ''],
     });
 
     await expect(runWizard()).resolves.toStrictEqual({
@@ -87,11 +87,11 @@ describe('runWizard', () => {
         network: 'none',
       },
     });
-    expect(inputMock).toHaveBeenCalledTimes(2);
+    expect(inputMock).toHaveBeenCalledTimes(3);
   });
 
   it('should offer the detected repository as the default', async () => {
-    queue({ select: ['strict', 'claude', true], input: ['', 'fix login'] });
+    queue({ select: ['strict', 'claude', true], input: ['', 'fix login', ''] });
 
     await runWizard();
 
@@ -99,7 +99,7 @@ describe('runWizard', () => {
   });
 
   it('should preserve supplied values and skip their matching questions', async () => {
-    queue({ select: ['strict', true], input: ['fix login'], confirm: [false] });
+    queue({ select: ['strict', true], input: ['fix login', ''], confirm: [false] });
 
     await expect(
       runWizard({ agent: 'codex', repo: '/work/app', configsDir: '/configs' }),
@@ -115,6 +115,16 @@ describe('runWizard', () => {
         network: 'strict',
       },
     });
-    expect(inputMock).toHaveBeenCalledTimes(1);
+    expect(inputMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('should preserve a supplied prompt without asking for another', async () => {
+    queue({ select: ['strict', true], input: ['fix login'], confirm: [false] });
+
+    await expect(runWizard({ prompt: 'Fix the login flow' })).resolves.toMatchObject({
+      action: 'session',
+      options: { prompt: 'Fix the login flow' },
+    });
+    expect(inputMock).toHaveBeenCalledTimes(2);
   });
 });

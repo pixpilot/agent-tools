@@ -22,10 +22,10 @@ export class CopilotAgent extends AgentAdapter {
     hint: 'Run /login inside Copilot CLI to sign in with your GitHub Copilot subscription.',
   };
 
-  launchCommand({ fullAccess, extraArgs }: AgentLaunchOptions): string {
+  launchCommand(options: AgentLaunchOptions): string {
     return this.buildCommand(
-      ['copilot', fullAccess ? '--allow-all-tools' : undefined],
-      extraArgs,
+      ['copilot', options.fullAccess ? '--allow-all-tools' : undefined],
+      options,
     );
   }
 

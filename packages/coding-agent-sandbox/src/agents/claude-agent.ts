@@ -24,10 +24,10 @@ export class ClaudeAgent extends AgentAdapter {
     hint: 'Claude Code starts its OAuth login on launch - sign in with the account holding your subscription.',
   };
 
-  launchCommand({ fullAccess, extraArgs }: AgentLaunchOptions): string {
+  launchCommand(options: AgentLaunchOptions): string {
     return this.buildCommand(
-      ['claude', fullAccess ? '--dangerously-skip-permissions' : undefined],
-      extraArgs,
+      ['claude', options.fullAccess ? '--dangerously-skip-permissions' : undefined],
+      options,
     );
   }
 

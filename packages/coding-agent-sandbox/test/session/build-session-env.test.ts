@@ -70,6 +70,12 @@ describe('buildSessionEnv', () => {
     expect(env['SANDBOX_POST_SYNC_CMD']).toContain('.agents/skills');
   });
 
+  it('should pass a safely quoted initial prompt to the agent command', () => {
+    expect(build({ prompt: "Fix O'Reilly login" })['SANDBOX_AGENT_CMD']).toBe(
+      "claude --dangerously-skip-permissions 'Fix O'\\''Reilly login'",
+    );
+  });
+
   it('should disable configuration provisioning when asked', () => {
     expect(build({ configs: false })['SANDBOX_CONFIGS_ENABLED']).toBe('0');
   });

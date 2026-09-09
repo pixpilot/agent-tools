@@ -13,8 +13,9 @@ function parse(argv: readonly string[]): boolean {
 }
 
 describe('hasExplicitOptions', () => {
-  it('should expose configs-dir and remove the legacy skills-dir option', () => {
+  it('should expose prompt and configs-dir, but not the legacy skills-dir option', () => {
     const options = createProgram('0.0.0').options.map((option) => option.long);
+    expect(options).toContain('--prompt');
     expect(options).toContain('--configs-dir');
     expect(options).not.toContain('--skills-dir');
   });

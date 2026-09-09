@@ -46,10 +46,23 @@ export abstract class AgentAdapter {
     return this.id;
   }
 
-  /** Joins the base command with the full-access flag and any extra args. */
-  protected buildCommand(parts: Array<string | undefined>, extraArgs?: string): string {
-    return [...parts, extraArgs]
+  /** Joins the base command with trusted flags and a safely quoted initial prompt. */
+  protected buildCommand(
+    parts: Array<string | undefined>,
+    { extraArgs, prompt }: AgentLaunchOptions,
+  ): string {
+    const initialPrompt = prompt?.trim();
+
+    return [
+      ...parts,
+      extraArgs,
+      initialPrompt == null || initialPrompt === '' ? undefined : quoteShellArgument(initialPrompt),
+    ]
       .filter((part): part is string => part != null && part.trim() !== '')
       .join(' ');
   }
+}
+
+function quoteShellArgument(value: string): string {
+  return `'${value.replaceAll("'", "'\\''")}'`;
 }

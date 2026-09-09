@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import type { AgentId } from './types';
+import type { AgentId } from './types.ts';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
-import { inspectConfigDirectory } from './config-directory';
-import { syncAgentConfigs } from './sync-agent-configs';
-import { AGENT_IDS } from './types';
+import { inspectConfigDirectory } from './config-directory.ts';
+import { syncAgentConfigs } from './sync-agent-configs.ts';
+import { AGENT_IDS } from './types.ts';
 
 const CLI_ARGUMENT_START_INDEX = 2;
 

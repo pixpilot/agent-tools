@@ -1,11 +1,15 @@
-import type { AgentId, SyncAgentConfigsOptions, SyncAgentConfigsResult } from './types';
-import { getAgentConfigPaths } from './agent-config-paths';
-import { findConfigComponent, inspectConfigDirectory } from './config-directory';
-import { syncManagedDirectory } from './sync-directory';
-import { syncMcps } from './sync-mcps';
-import { syncPrompts } from './sync-prompts';
-import { syncRules } from './sync-rules';
-import { CONFIG_COMPONENTS } from './types';
+import type {
+  AgentId,
+  SyncAgentConfigsOptions,
+  SyncAgentConfigsResult,
+} from './types.ts';
+import { getAgentConfigPaths } from './agent-config-paths.ts';
+import { findConfigComponent, inspectConfigDirectory } from './config-directory.ts';
+import { syncManagedDirectory } from './sync-directory.ts';
+import { syncMcps } from './sync-mcps.ts';
+import { syncPrompts } from './sync-prompts.ts';
+import { syncRules } from './sync-rules.ts';
+import { CONFIG_COMPONENTS } from './types.ts';
 
 const DEFAULT_AGENTS: readonly AgentId[] = ['claude', 'codex', 'copilot'];
 
@@ -37,7 +41,13 @@ export function syncAgentConfigs(
       copied.push(...syncPrompts(promptsSource, target.promptsDirectory, agent));
 
     const mcpSource = findConfigComponent(source.path, 'mcp');
-    if (mcpSource != null) copied.push(syncMcps(mcpSource, target.mcpFile, agent));
+    if (mcpSource != null) {
+      copied.push(
+        ...syncMcps(mcpSource, target.mcpFile, agent, {
+          settingsFile: target.mcpSettingsFile,
+        }),
+      );
+    }
 
     const rulesSource = findConfigComponent(source.path, 'rules');
     if (rulesSource != null)

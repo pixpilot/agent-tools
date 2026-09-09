@@ -15,6 +15,8 @@ export interface AgentConfigPaths {
   skillsDirectory: string;
   promptsDirectory: string;
   mcpFile: string;
+  /** Optional client settings file that controls MCP process startup. */
+  mcpSettingsFile?: string;
   rulesFile: string;
 }
 

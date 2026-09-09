@@ -193,6 +193,40 @@ describe('syncAgentConfigs', () => {
       'manual',
     );
   });
+
+  it('should apply a portable startup timeout to every supported client', () => {
+    const source = path.join(root, 'source');
+    const home = path.join(root, 'home');
+    write(
+      'source/mcp.jsonc',
+      '{ "$defaults": { "startupTimeoutSec": 120 }, "files": { "command": "npx", "args": ["-y", "server"] } }',
+    );
+    write('home/.claude/settings.json', '{ "theme": "dark" }');
+
+    syncAgentConfigs({
+      configDirectory: source,
+      agents: ['claude', 'codex', 'copilot'],
+      homeDirectory: home,
+      platform: 'linux',
+    });
+
+    const claudeSettings = JSON.parse(
+      fs.readFileSync(path.join(home, '.claude/settings.json'), 'utf8'),
+    ) as { env: { MCP_TIMEOUT: string }; theme: string };
+    expect(claudeSettings).toMatchObject({
+      env: { MCP_TIMEOUT: '120000' },
+      theme: 'dark',
+    });
+
+    const codex = fs.readFileSync(path.join(home, '.codex/config.toml'), 'utf8');
+    expect(codex).toContain('mcp_optional_startup_grace_ms = 0');
+    expect(codex).toContain('startup_timeout_sec = 120');
+
+    const copilot = JSON.parse(
+      fs.readFileSync(path.join(home, '.copilot/mcp-config.json'), 'utf8'),
+    ) as { mcpServers: { files: { timeout: number } } };
+    expect(copilot.mcpServers.files.timeout).toBe(120000);
+  });
 });
 
 describe('createAgentConfigSnapshot', () => {

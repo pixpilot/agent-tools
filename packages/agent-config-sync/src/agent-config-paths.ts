@@ -1,4 +1,4 @@
-import type { AgentConfigPaths, AgentId } from './types';
+import type { AgentConfigPaths, AgentId } from './types.ts';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -44,6 +44,7 @@ export function getAgentConfigPaths(
       skillsDirectory,
       promptsDirectory: path.join(homeDirectory, '.claude', 'commands'),
       mcpFile: path.join(homeDirectory, '.claude.json'),
+      mcpSettingsFile: path.join(homeDirectory, '.claude', 'settings.json'),
       rulesFile: path.join(homeDirectory, '.claude', 'CLAUDE.md'),
     };
   }
@@ -61,7 +62,7 @@ export function getAgentConfigPaths(
   return {
     skillsDirectory,
     promptsDirectory: path.join(vscodeUserDirectory, 'prompts'),
-    mcpFile: path.join(vscodeUserDirectory, 'mcp.json'),
+    mcpFile: path.join(homeDirectory, '.copilot', 'mcp-config.json'),
     rulesFile: path.join(
       vscodeUserDirectory,
       'prompts',

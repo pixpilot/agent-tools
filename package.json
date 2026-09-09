@@ -42,6 +42,7 @@
     "gen:package": "npx @pixpilot/scaffoldfy@latest --config ./generators/package/scaffoldfy.json",
     "changeset": "changeset",
     "changeset:publish": "changeset publish",
+    "agent:start": "pnpm --filter @pixpilot/coding-agent-sandbox agent:start",
     "generate-packages-section": "node scripts/generate-packages-section.js"
   },
   "devDependencies": {

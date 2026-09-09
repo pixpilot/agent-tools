@@ -17,6 +17,8 @@ export interface AgentAuthConfig {
 export interface AgentLaunchOptions {
   /** Grant the agent unattended tool/permission access inside the sandbox. */
   fullAccess: boolean;
+  /** Initial user message passed as one safely quoted positional argument. */
+  prompt?: string | undefined;
   /** Trusted shell text appended to the agent command; never accept untrusted input. */
   extraArgs?: string | undefined;
 }
@@ -74,6 +76,8 @@ export interface SandboxOptions {
   worktree?: string | undefined;
   base?: string | undefined;
   image?: string | undefined;
+  /** Initial user message passed safely to the selected coding agent. */
+  prompt?: string | undefined;
   /** Trusted shell text, evaluated inside the container. */
   agentArgs?: string | undefined;
   fullAccess: boolean;
