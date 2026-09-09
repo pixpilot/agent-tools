@@ -12,9 +12,16 @@ const JSON_INDENT_SPACES = 2;
 /** Creates a temporary portable snapshot containing no credentials or token values. */
 export function createAgentConfigSnapshot(
   agent: AgentId,
-  options: { homeDirectory?: string; platform?: NodeJS.Platform } = {},
+  options: {
+    homeDirectory?: string;
+    platform?: NodeJS.Platform;
+    /** Temporary directory name prefix, so a caller can name itself as the owner. */
+    directoryPrefix?: string;
+  } = {},
 ): ConfigSnapshot {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-config-sync-'));
+  const root = fs.mkdtempSync(
+    path.join(os.tmpdir(), options.directoryPrefix ?? 'agent-config-sync-'),
+  );
   try {
     const paths = getAgentConfigPaths(agent, options);
     copyDirectoryIfPresent(paths.skillsDirectory, path.join(root, 'skills'));

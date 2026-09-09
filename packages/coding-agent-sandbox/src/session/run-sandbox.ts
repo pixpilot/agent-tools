@@ -21,6 +21,7 @@ import { ensureWorktree } from '../git/ensure-worktree';
 import { getRemoteHosts } from '../git/get-remote-hosts';
 import {
   importSandboxGit,
+  keepSandboxGit,
   prepareSandboxGit,
   removeSandboxGit,
 } from '../git/prepare-sandbox-git';
@@ -205,6 +206,7 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
           }
         } catch (cause) {
           preserveSandboxGit = true;
+          keepSandboxGit(sandboxGit);
           warn(
             `Could not import sandbox commits safely: ${
               cause instanceof Error ? cause.message : String(cause)

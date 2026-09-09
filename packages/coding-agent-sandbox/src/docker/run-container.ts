@@ -1,6 +1,7 @@
 import type { SessionPlan } from '../types';
 import { spawn } from 'node:child_process';
 import process from 'node:process';
+import { setTerminalHandoff } from '../utils/temp-directories';
 import { buildRunArgs } from './build-run-args';
 import { removeContainer } from './remove-container';
 
@@ -22,6 +23,9 @@ export async function runContainer(plan: SessionPlan): Promise<number> {
     windowsHide: true,
   });
 
+  // The agent now owns the terminal, so process-wide handlers must not exit on
+  // its behalf; this run tears itself down and lets the normal exit path clean up.
+  setTerminalHandoff(true);
   let interrupted: NodeJS.Signals | undefined;
   // Interactive Ctrl+C belongs to the agent. Other signals must stop Docker
   // and reach the cleanup below, including when only the parent was signalled.
@@ -49,6 +53,7 @@ export async function runContainer(plan: SessionPlan): Promise<number> {
       });
     });
   } finally {
+    setTerminalHandoff(false);
     for (const [signal, handler] of handlers) {
       process.off(signal, handler);
     }

@@ -17,6 +17,11 @@ export const PROXY_CONTAINER_PREFIX = `${CONTAINER_PREFIX}-proxy`;
 /** Hosts the container must never send to the proxy. */
 export const NO_PROXY_HOSTS = 'localhost,127.0.0.1';
 
+/** Prefix for host temporary directories, so a leftover names its creator. */
+export const TEMP_DIRECTORY_PREFIX = `${CONTAINER_PREFIX}-`;
+/** Marker that exempts a temporary directory kept for recovery from sweeps. */
+export const TEMP_DIRECTORY_KEEP_MARKER = '.keep-for-recovery';
+
 export const SANDBOX_LABEL = 'com.pixpilot.sandbox';
 export const AGENT_LABEL = `${SANDBOX_LABEL}.agent`;
 export const WORKTREE_LABEL = `${SANDBOX_LABEL}.worktree`;

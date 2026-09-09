@@ -20,6 +20,10 @@ import { EXIT_CODE_ERROR } from './constants';
 import { pruneVolumes } from './docker/prune-volumes';
 import { runSandbox } from './session/run-sandbox';
 import { error, plain } from './utils/logger';
+import {
+  installTempDirectoryCleanup,
+  removeStaleTempDirectories,
+} from './utils/temp-directories';
 
 const AGENT_ID_COLUMN_WIDTH = 10;
 
@@ -34,6 +38,8 @@ function readVersion(): string {
 }
 
 async function main(): Promise<void> {
+  installTempDirectoryCleanup();
+  removeStaleTempDirectories();
   const program = createProgram(readVersion());
   let pruning = false;
   program.action(() => {});

@@ -7,8 +7,17 @@ import {
 } from '@pixpilot/agent-config-sync';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveConfigSource } from '../../src/configs/resolve-config-source';
+import {
+  removeTempDirectory,
+  trackTempDirectory,
+} from '../../src/utils/temp-directories';
 
 vi.mock('@inquirer/prompts', () => ({ select: vi.fn() }));
+vi.mock('../../src/utils/temp-directories', () => ({
+  removeTempDirectory: vi.fn(),
+  tempDirectoryPrefix: (purpose: string) => `coding-agent-sandbox-${purpose}-1234-`,
+  trackTempDirectory: vi.fn(),
+}));
 vi.mock('@pixpilot/agent-config-sync', () => ({
   CONFIG_COMPONENTS: ['skills', 'prompts', 'mcp', 'rules'],
   createAgentConfigSnapshot: vi.fn(),
@@ -31,8 +40,20 @@ describe('resolveConfigSource', () => {
   });
 
   it('should snapshot only the selected agent when no directory was supplied', async () => {
-    await expect(resolveConfigSource({ agent: 'codex' })).resolves.toBe(snapshot);
-    expect(createAgentConfigSnapshot).toHaveBeenCalledWith('codex');
+    await expect(resolveConfigSource({ agent: 'codex' })).resolves.toMatchObject({
+      path: '/snapshot',
+    });
+    expect(createAgentConfigSnapshot).toHaveBeenCalledWith('codex', {
+      directoryPrefix: 'coding-agent-sandbox-configs-1234-',
+    });
+  });
+
+  it('should remove the snapshot through the session cleanup registry', async () => {
+    const resolved = await resolveConfigSource({ agent: 'codex' });
+    expect(trackTempDirectory).toHaveBeenCalledWith('/snapshot');
+
+    resolved.cleanup?.();
+    expect(removeTempDirectory).toHaveBeenCalledWith('/snapshot');
   });
 
   it('should use an incomplete explicit source unchanged in non-interactive mode', async () => {
@@ -54,7 +75,7 @@ describe('resolveConfigSource', () => {
 
     await expect(
       resolveConfigSource({ requested: '/configs', agent: 'claude' }),
-    ).resolves.toMatchObject({ path: '/snapshot', cleanup: snapshot.cleanup });
+    ).resolves.toMatchObject({ path: '/snapshot', cleanup: expect.any(Function) });
     expect(mergeConfigDirectories).toHaveBeenCalledWith('/configs', '/snapshot');
   });
 

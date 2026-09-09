@@ -3,3 +3,13 @@ export { pathKey, pathsEqual, toMountSource, toPosixPath } from './normalize-pat
 export { runCapture, runInherit, runOrThrow } from './run-command';
 export { shortHash } from './short-hash';
 export { slugify } from './slugify';
+export {
+  createTempDirectory,
+  installTempDirectoryCleanup,
+  keepTempDirectory,
+  removeStaleTempDirectories,
+  removeTempDirectory,
+  setTerminalHandoff,
+  tempDirectoryPrefix,
+  trackTempDirectory,
+} from './temp-directories';

@@ -1,9 +1,13 @@
 import type { RepositoryInfo, WorktreeInfo } from '../types';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { runCapture, runOrThrow } from '../utils/run-command';
 import { shortHash } from '../utils/short-hash';
+import {
+  createTempDirectory,
+  keepTempDirectory,
+  removeTempDirectory,
+} from '../utils/temp-directories';
 
 /** Private Git metadata and its container-facing pointer for one session. */
 export interface SandboxGit {
@@ -20,7 +24,7 @@ export function prepareSandboxGit(
   repository: RepositoryInfo,
   worktree: WorktreeInfo,
 ): SandboxGit {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'coding-agent-sandbox-git-'));
+  const root = createTempDirectory('git');
   const gitDir = path.join(root, 'repository.git');
   const pointerPath = path.join(root, 'workspace.git');
   const hooksPath = path.join(root, 'hooks');
@@ -61,7 +65,7 @@ export function prepareSandboxGit(
       ]),
     };
   } catch (cause) {
-    fs.rmSync(root, { recursive: true, force: true });
+    removeTempDirectory(root);
     throw cause;
   }
 }
@@ -152,7 +156,12 @@ export function importSandboxGit(
 
 /** Removes private session Git data after it was imported or proved unused. */
 export function removeSandboxGit(sandboxGit: SandboxGit): void {
-  fs.rmSync(sandboxGit.root, { recursive: true, force: true });
+  removeTempDirectory(sandboxGit.root);
+}
+
+/** Keeps unimported session Git data on disk so its commits can be recovered. */
+export function keepSandboxGit(sandboxGit: SandboxGit): void {
+  keepTempDirectory(sandboxGit.root);
 }
 
 function isAncestor(gitDirectory: string, base: string, candidate: string): boolean {

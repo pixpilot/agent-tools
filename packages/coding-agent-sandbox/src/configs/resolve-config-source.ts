@@ -1,4 +1,4 @@
-import type { AgentId } from '@pixpilot/agent-config-sync';
+import type { AgentId, ConfigSnapshot } from '@pixpilot/agent-config-sync';
 import type { ConfigSourceInfo } from '../types';
 import { select } from '@inquirer/prompts';
 import {
@@ -8,6 +8,11 @@ import {
   mergeConfigDirectories,
 } from '@pixpilot/agent-config-sync';
 import { detail, plain, warn } from '../utils/logger';
+import {
+  removeTempDirectory,
+  tempDirectoryPrefix,
+  trackTempDirectory,
+} from '../utils/temp-directories';
 
 export interface ResolveConfigSourceOptions {
   requested?: string | undefined;
@@ -24,7 +29,7 @@ export async function resolveConfigSource(
 ): Promise<ConfigSourceInfo> {
   const requested = options.requested?.trim();
   if (requested == null || requested === '') {
-    return createAgentConfigSnapshot(options.agent);
+    return snapshotAgentConfig(options.agent);
   }
 
   const source = inspectConfigDirectory(requested);
@@ -52,7 +57,19 @@ export async function resolveConfigSource(
   if (choice === 'cancel') throw new Error('Cancelled - no container was created.');
   if (choice === 'available') return source;
 
-  const snapshot = createAgentConfigSnapshot(options.agent);
+  const snapshot = snapshotAgentConfig(options.agent);
   mergeConfigDirectories(source.path, snapshot.path);
   return { ...inspectConfigDirectory(snapshot.path), cleanup: snapshot.cleanup };
+}
+
+/**
+ * Names the snapshot after this CLI and hands its removal to the session
+ * cleanup, so an interrupted run never leaves it behind.
+ */
+function snapshotAgentConfig(agent: AgentId): ConfigSnapshot {
+  const snapshot = createAgentConfigSnapshot(agent, {
+    directoryPrefix: tempDirectoryPrefix('configs'),
+  });
+  trackTempDirectory(snapshot.path);
+  return { ...snapshot, cleanup: () => removeTempDirectory(snapshot.path) };
 }
