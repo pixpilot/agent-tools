@@ -1,5 +1,16 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.7.0
+
+### Minor Changes
+
+- implement temporary directory management
+
+### Patch Changes
+
+- Updated dependencies
+  - @pixpilot/agent-config-sync@0.6.0
+
 ## 1.6.1
 
 ### Patch Changes

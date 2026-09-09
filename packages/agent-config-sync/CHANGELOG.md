@@ -1,5 +1,11 @@
 # @pixpilot/agent-config-sync
 
+## 0.6.0
+
+### Minor Changes
+
+- implement temporary directory management
+
 ## 0.5.0
 
 ### Minor Changes
