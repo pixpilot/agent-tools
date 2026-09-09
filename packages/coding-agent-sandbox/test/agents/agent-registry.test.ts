@@ -79,6 +79,33 @@ describe('agent launch commands', () => {
     );
   });
 
+  it('should pass the model through to every agent', () => {
+    for (const agent of listAgents()) {
+      expect(agent.launchCommand({ fullAccess: false, model: 'gpt-5.1-codex' })).toBe(
+        `${agent.binary} --model 'gpt-5.1-codex'`,
+      );
+    }
+  });
+
+  it('should place the model before extra arguments and the prompt', () => {
+    expect(
+      getAgent('codex').launchCommand({
+        fullAccess: true,
+        model: 'gpt-5.1-codex',
+        extraArgs: '--search',
+        prompt: '- ship it',
+      }),
+    ).toBe(
+      "codex --dangerously-bypass-approvals-and-sandbox --model 'gpt-5.1-codex' --search -- '- ship it'",
+    );
+  });
+
+  it('should ignore a blank model', () => {
+    expect(getAgent('claude').launchCommand({ fullAccess: false, model: '  ' })).toBe(
+      'claude',
+    );
+  });
+
   it('should ignore blank extra arguments', () => {
     expect(getAgent('claude').launchCommand({ fullAccess: false, extraArgs: '  ' })).toBe(
       'claude',

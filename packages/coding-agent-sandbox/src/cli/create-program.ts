@@ -30,6 +30,10 @@ export function createProgram(version: string): Command {
     .option('--base <ref>', 'Base ref for a newly created branch')
     .option('--image <tag>', 'Use an existing image instead of the bundled one')
     .option('--prompt <text>', 'Initial prompt passed safely to the agent')
+    .option(
+      '--model <name>',
+      'Model the agent should use; overrides agents.jsonc in --configs-dir',
+    )
     .option('--agent-args <args>', 'Trusted shell text appended to the agent command')
     .option(
       '--full-access <boolean>',

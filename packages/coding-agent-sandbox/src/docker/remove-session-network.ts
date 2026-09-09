@@ -1,3 +1,4 @@
+import type { ProxyAudit } from '../network/extract-proxy-hosts';
 import type { SessionNetworkNames } from '../network/session-network-names';
 import { SANDBOX_LABEL } from '../constants';
 import { extractProxyHosts } from '../network/extract-proxy-hosts';
@@ -8,10 +9,12 @@ import { runCapture } from '../utils/run-command';
  * Unique hostnames the session's proxy saw. Read before teardown, because
  * removing the container discards its log.
  */
-export function readProxyHosts(names: SessionNetworkNames): string[] {
+export function readProxyHosts(names: SessionNetworkNames): ProxyAudit {
   const logs = runCapture('docker', ['logs', names.proxy]);
 
-  return logs.status === 0 ? extractProxyHosts(`${logs.stdout}\n${logs.stderr}`) : [];
+  return logs.status === 0
+    ? extractProxyHosts(`${logs.stdout}\n${logs.stderr}`)
+    : { reached: [], blocked: [] };
 }
 
 /**
@@ -33,20 +36,32 @@ export function removeSessionNetwork(names: SessionNetworkNames): void {
   }
 }
 
-/** Prints the hostnames the session actually reached. */
-export function printProxyAudit(hosts: readonly string[]): void {
+/** Prints the hostnames the session reached, and the ones it was refused. */
+export function printProxyAudit(audit: ProxyAudit): void {
   plain();
 
-  if (hosts.length === 0) {
+  if (audit.reached.length === 0) {
     detail('egress audit: the session reached no hosts through the proxy.');
+  } else {
+    detail(`egress audit: ${audit.reached.length} host(s) seen by the session proxy`);
+
+    for (const host of audit.reached) {
+      plain(`  ${host}`);
+    }
+  }
+
+  if (audit.blocked.length === 0) {
     return;
   }
 
-  detail(`egress audit: ${hosts.length} host(s) seen by the session proxy`);
+  plain();
+  warn(`${audit.blocked.length} host(s) were refused by the network policy:`);
 
-  for (const host of hosts) {
+  for (const host of audit.blocked) {
     plain(`  ${host}`);
   }
+
+  detail('Add the ones you trust with --allow-hosts, or rerun with --network open.');
 }
 
 function ownedByThisCli(container: string): boolean {

@@ -1,4 +1,5 @@
 export { buildProxyEnv } from './build-proxy-env';
+export type { ProxyAudit } from './extract-proxy-hosts';
 export { extractProxyHosts } from './extract-proxy-hosts';
 export {
   DEFAULT_NETWORK_MODE,

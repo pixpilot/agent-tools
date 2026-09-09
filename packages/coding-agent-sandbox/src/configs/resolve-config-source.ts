@@ -1,13 +1,12 @@
 import type { AgentId, ConfigSnapshot } from '@pixpilot/agent-config-sync';
 import type { ConfigSourceInfo } from '../types';
-import { select } from '@inquirer/prompts';
 import {
   CONFIG_COMPONENTS,
   createAgentConfigSnapshot,
   inspectConfigDirectory,
   mergeConfigDirectories,
 } from '@pixpilot/agent-config-sync';
-import { detail, plain, warn } from '../utils/logger';
+import { detail } from '../utils/logger';
 import {
   removeTempDirectory,
   tempDirectoryPrefix,
@@ -17,45 +16,32 @@ import {
 export interface ResolveConfigSourceOptions {
   requested?: string | undefined;
   agent: AgentId;
-  nonInteractive?: boolean | undefined;
 }
 
 /**
  * Resolves explicit portable config assets or makes a safe snapshot of the
- * selected agent's installed settings when no directory was supplied.
+ * selected agent's installed settings when no directory was supplied. A
+ * directory that provides only some components is never rejected and never
+ * prompts: the agent's own configuration fills the gaps, and the supplied
+ * assets win wherever both exist.
  */
-export async function resolveConfigSource(
+export function resolveConfigSource(
   options: ResolveConfigSourceOptions,
-): Promise<ConfigSourceInfo> {
+): ConfigSourceInfo {
   const requested = options.requested?.trim();
   if (requested == null || requested === '') {
     return snapshotAgentConfig(options.agent);
   }
 
   const source = inspectConfigDirectory(requested);
-  if (
-    source.available.length === CONFIG_COMPONENTS.length ||
-    options.nonInteractive === true
-  ) {
+  if (source.available.length === CONFIG_COMPONENTS.length) {
     return source;
   }
 
-  warn('The supplied configuration directory is incomplete:');
-  detail(source.path);
-  plain(`Available: ${source.available.join(', ') || 'none'}`);
-  plain();
-
-  const choice = await select({
-    message: 'How would you like to continue?',
-    choices: [
-      { name: 'Copy missing configs from this agent’s defaults', value: 'defaults' },
-      { name: 'Use only the available configs in this directory', value: 'available' },
-      { name: 'Cancel', value: 'cancel' },
-    ],
-  });
-
-  if (choice === 'cancel') throw new Error('Cancelled - no container was created.');
-  if (choice === 'available') return source;
+  const missing = CONFIG_COMPONENTS.filter(
+    (component) => !source.available.includes(component),
+  );
+  detail(`using ${options.agent} defaults for: ${missing.join(', ')}`);
 
   const snapshot = snapshotAgentConfig(options.agent);
   mergeConfigDirectories(source.path, snapshot.path);

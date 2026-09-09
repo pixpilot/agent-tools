@@ -1,8 +1,10 @@
 import type { AgentId } from '@pixpilot/agent-config-sync';
+import type { ProxyAudit } from '../network/extract-proxy-hosts';
 import type { ConfigSourceInfo, SandboxOptions, SessionPlan } from '../types';
 import { existsSync } from 'node:fs';
 import process from 'node:process';
 import { getAgent } from '../agents/agent-registry';
+import { readAgentSettings } from '../configs/read-agent-settings';
 import { resolveConfigSource } from '../configs/resolve-config-source';
 import { ensureDocker } from '../docker/ensure-docker';
 import { ensureImage } from '../docker/ensure-image';
@@ -72,12 +74,19 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
 
   const configs: ConfigSourceInfo =
     options.configs && !offline
-      ? await resolveConfigSource({
+      ? resolveConfigSource({
           requested: options.configsDir,
           agent: agent.id as AgentId,
-          nonInteractive: options.yes || !process.stdin.isTTY,
         })
       : { path: repository.root, available: [] };
+
+  // `agents.jsonc` only supplies a default; an explicit `--model` always wins.
+  const session: SandboxOptions = {
+    ...options,
+    model:
+      options.model ??
+      readAgentSettings(options.configsDir, agent.id as AgentId).model,
+  };
 
   try {
     if (offline) {
@@ -159,7 +168,7 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
           repository,
           worktree,
           configs,
-          options,
+          options: session,
         }),
         ...(proxied ? buildProxyEnv(names.proxyUrl) : {}),
       },
@@ -179,7 +188,7 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     }
 
     let exitCode = 1;
-    let proxyHosts: string[] = [];
+    let proxyHosts: ProxyAudit = { reached: [], blocked: [] };
     let preserveSandboxGit = false;
     try {
       if (proxied) {

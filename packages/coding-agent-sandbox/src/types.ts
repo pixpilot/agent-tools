@@ -19,6 +19,8 @@ export interface AgentLaunchOptions {
   fullAccess: boolean;
   /** Initial user message passed as one safely quoted positional argument. */
   prompt?: string | undefined;
+  /** Model the agent should use; the name is agent-specific and unvalidated. */
+  model?: string | undefined;
   /** Trusted shell text appended to the agent command; never accept untrusted input. */
   extraArgs?: string | undefined;
 }
@@ -80,6 +82,8 @@ export interface SandboxOptions {
   prompt?: string | undefined;
   /** Trusted shell text, evaluated inside the container. */
   agentArgs?: string | undefined;
+  /** Model passed to the agent, overriding any `agents.jsonc` default. */
+  model?: string | undefined;
   fullAccess: boolean;
   install: boolean;
   configs: boolean;

@@ -66,12 +66,13 @@ portable configs directory                                  -> /coding-agent-san
 | `--agent <agent>`         | `claude`, `codex` or `copilot`                                              |
 | `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)       |
 | `--task <name>`           | Task name; drives the branch and worktree names                             |
-| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, and rules |
+| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules |
 | `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                |
 | `--worktree <path>`       | Override the worktree location                                              |
 | `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)        |
 | `--image <tag>`           | Use an existing image instead of building the bundled one                   |
 | `--prompt <text>`         | Initial prompt passed safely to the selected agent                          |
+| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`                        |
 | `--agent-args <args>`     | Trusted shell text appended to the agent command                            |
 | `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                    |
 | `--no-install`            | Skip project dependency installation                                        |
@@ -106,7 +107,10 @@ npx @pixpilot/coding-agent-sandbox --agent codex --task "fix login" \
 
 # Keep approval prompts on, and pass an agent flag through
 npx @pixpilot/coding-agent-sandbox --agent claude --task "risky refactor" \
-  --full-access false --agent-args "--model opus"
+  --full-access false --agent-args "--verbose"
+
+# Pick the model for this session
+npx @pixpilot/coding-agent-sandbox --agent codex --task "fix login" --model gpt-5.1-codex
 
 # See exactly what would run, without creating a worktree or a container
 npx @pixpilot/coding-agent-sandbox --agent claude --task "fix resume generation" --dry-run --yes
@@ -124,11 +128,26 @@ If the worktree already exists it is **reused**, never recreated. Before reuse i
 
 ## Configuration provisioning
 
-The sandbox never executes a script from your configuration directory. Pass `--configs-dir <path>` to mount portable assets read-only; a missing supplied path is an error. If that directory is incomplete, the interactive CLI offers the selected agent’s default config for missing assets or uses only what is present.
+The sandbox never executes a script from your configuration directory. Pass `--configs-dir <path>` to mount portable assets read-only; a missing supplied path is an error. An incomplete directory never prompts and is never rejected: the selected agent’s own configuration supplies whatever the directory does not, and the supplied assets win wherever both provide the same component.
 
 Without `--configs-dir`, the selected agent’s skills, prompts, MCP servers and global instructions are copied into a temporary portable snapshot. Credentials, agent state, and MCP token-like values are excluded. The snapshot is removed when the session exits.
 
 Configuration is applied with the bundled `@pixpilot/agent-config-sync` CLI, using centrally defined Windows, macOS, and Linux targets. Provisioning fails closed; use `--no-configs` to opt out.
+
+### `agents.jsonc`
+
+An optional `agents.jsonc` (or `agents.json`) in `--configs-dir` sets per-agent launch defaults. Unlike the other components it is read on the host and shapes the agent command instead of being synced into the container, so it applies even with `--no-configs`.
+
+```jsonc
+{
+  // Used by any agent without its own entry.
+  "$defaults": { "model": "gpt-5.1-codex" },
+  "claude": { "model": "opus" },
+  "codex": { "model": "gpt-5.1-codex" }
+}
+```
+
+Precedence is `--model` > the agent’s own entry > `$defaults`. Model names are agent-specific and passed through unvalidated.
 
 ## Authentication
 

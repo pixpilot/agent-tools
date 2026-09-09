@@ -11,6 +11,8 @@ import process from 'node:process';
 import { domainToASCII } from 'node:url';
 
 const MAX_CLIENT_HELLO_BYTES = 65_536;
+const LOG_REPEAT_WINDOW_MS = 1_000;
+const MAX_TRACKED_LOG_LINES = 512;
 const CLIENT_HELLO_TIMEOUT_MS = 5_000;
 const MODE = parseMode(process.env.SANDBOX_PROXY_MODE);
 const PORT = parsePort(process.env.SANDBOX_PROXY_PORT);
@@ -45,7 +47,14 @@ server.listen(PORT, '0.0.0.0', () => {
 
 async function proxyHttp(request, response) {
   const target = parseHttpTarget(request.url);
-  ensureAllowed(target.host);
+  const denial = denialReason(target.host);
+
+  if (denial !== undefined) {
+    log('REJECTED', `${target.host}:${target.port}`, denial);
+    writeError(response, 403, denial);
+    return;
+  }
+
   const address = await resolvePublicIpv4(target.host);
   log('HTTP', `${target.host}:${target.port}`, address);
 
@@ -87,7 +96,17 @@ async function proxyConnect(request, client, head) {
     return;
   }
 
-  ensureAllowed(target.host);
+  // A blocked host is answered, never reset: a client that only sees the socket
+  // disappear retries at once, and a single unreachable host then costs
+  // thousands of identical tunnel attempts per second.
+  const denial = denialReason(target.host);
+
+  if (denial !== undefined) {
+    log('REJECTED', `${target.host}:${target.port}`, denial);
+    client.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+    return;
+  }
+
   const address = await resolvePublicIpv4(target.host);
 
   if (MODE === 'strict') {
@@ -182,9 +201,10 @@ function normalizeHost(value) {
   return normalized;
 }
 
-function ensureAllowed(host) {
+/** Why a host may not be reached, or `undefined` when it is allowed. */
+function denialReason(host) {
   if (MODE !== 'strict') {
-    return;
+    return undefined;
   }
 
   const allowed = ALLOWED_HOSTS.some((pattern) =>
@@ -193,9 +213,7 @@ function ensureAllowed(host) {
       : host === pattern,
   );
 
-  if (!allowed) {
-    throw new Error(`Host ${host} is not on the strict allowlist.`);
-  }
+  return allowed ? undefined : `Host ${host} is not on the strict allowlist.`;
 }
 
 async function resolvePublicIpv4(host) {
@@ -385,8 +403,31 @@ function writeError(response, status, message) {
   response.end(`${message}\n`);
 }
 
+const repeats = new Map();
+
+/**
+ * Writes one line per event, collapsing identical lines to at most one per
+ * second. A client retrying a blocked host in a tight loop would otherwise
+ * write tens of thousands of identical lines into the session log.
+ */
 function log(event, target, detail) {
+  const line = `PROXY ${event} ${target}${detail === undefined ? '' : ` ${detail}`}`;
+  const now = Date.now();
+  const previous = repeats.get(line);
+
+  if (previous !== undefined && now - previous.at < LOG_REPEAT_WINDOW_MS) {
+    previous.suppressed += 1;
+    return;
+  }
+
+  const suppressed = previous === undefined ? 0 : previous.suppressed;
+  repeats.set(line, { at: now, suppressed: 0 });
+
+  if (repeats.size > MAX_TRACKED_LOG_LINES) {
+    repeats.delete(repeats.keys().next().value);
+  }
+
   process.stderr.write(
-    `PROXY ${event} ${target}${detail === undefined ? '' : ` ${detail}`}\n`,
+    suppressed === 0 ? `${line}\n` : `${line} (+${suppressed} identical)\n`,
   );
 }

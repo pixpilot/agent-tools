@@ -8,6 +8,7 @@ export {
   inspectConfigDirectory,
   mergeConfigDirectories,
 } from './config-directory.ts';
+export { parseJsonc } from './jsonc.ts';
 export {
   createAgentConfigSnapshot,
   extractCodexMcpServers,

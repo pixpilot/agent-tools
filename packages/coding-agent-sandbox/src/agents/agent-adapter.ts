@@ -49,12 +49,18 @@ export abstract class AgentAdapter {
   /** Joins the base command with trusted flags and a safely quoted initial prompt. */
   protected buildCommand(
     parts: Array<string | undefined>,
-    { extraArgs, prompt }: AgentLaunchOptions,
+    { extraArgs, model, prompt }: AgentLaunchOptions,
   ): string {
     const initialPrompt = prompt?.trim();
+    const selectedModel = model?.trim();
 
     return [
       ...parts,
+      // Every supported CLI spells this the same way; the name itself is
+      // agent-specific and passed through untouched.
+      selectedModel == null || selectedModel === ''
+        ? undefined
+        : `--model ${quoteShellArgument(selectedModel)}`,
       extraArgs,
       // The prompt is positional, so one starting with `-` is parsed as an
       // unknown flag; `--` ends option parsing before it is read.

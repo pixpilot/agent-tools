@@ -1,5 +1,4 @@
 import type { ConfigDirectoryInfo, ConfigSnapshot } from '@pixpilot/agent-config-sync';
-import { select } from '@inquirer/prompts';
 import {
   createAgentConfigSnapshot,
   inspectConfigDirectory,
@@ -12,7 +11,6 @@ import {
   trackTempDirectory,
 } from '../../src/utils/temp-directories';
 
-vi.mock('@inquirer/prompts', () => ({ select: vi.fn() }));
 vi.mock('../../src/utils/temp-directories', () => ({
   removeTempDirectory: vi.fn(),
   tempDirectoryPrefix: (purpose: string) => `coding-agent-sandbox-${purpose}-1234-`,
@@ -39,8 +37,8 @@ describe('resolveConfigSource', () => {
     vi.mocked(createAgentConfigSnapshot).mockReturnValue(snapshot);
   });
 
-  it('should snapshot only the selected agent when no directory was supplied', async () => {
-    await expect(resolveConfigSource({ agent: 'codex' })).resolves.toMatchObject({
+  it('should snapshot only the selected agent when no directory was supplied', () => {
+    expect(resolveConfigSource({ agent: 'codex' })).toMatchObject({
       path: '/snapshot',
     });
     expect(createAgentConfigSnapshot).toHaveBeenCalledWith('codex', {
@@ -48,42 +46,34 @@ describe('resolveConfigSource', () => {
     });
   });
 
-  it('should remove the snapshot through the session cleanup registry', async () => {
-    const resolved = await resolveConfigSource({ agent: 'codex' });
+  it('should remove the snapshot through the session cleanup registry', () => {
+    const resolved = resolveConfigSource({ agent: 'codex' });
     expect(trackTempDirectory).toHaveBeenCalledWith('/snapshot');
 
     resolved.cleanup?.();
     expect(removeTempDirectory).toHaveBeenCalledWith('/snapshot');
   });
 
-  it('should use an incomplete explicit source unchanged in non-interactive mode', async () => {
-    await expect(
-      resolveConfigSource({
-        requested: '/configs',
-        agent: 'claude',
-        nonInteractive: true,
-      }),
-    ).resolves.toBe(source);
-    expect(select).not.toHaveBeenCalled();
+  it('should use a complete explicit source without snapshotting the agent', () => {
+    vi.mocked(inspectConfigDirectory).mockReturnValue({
+      path: '/configs',
+      available: ['skills', 'prompts', 'mcp', 'rules'],
+    });
+
+    expect(resolveConfigSource({ requested: '/configs', agent: 'claude' })).toMatchObject(
+      { path: '/configs' },
+    );
+    expect(createAgentConfigSnapshot).not.toHaveBeenCalled();
   });
 
-  it('should overlay explicit assets onto a default snapshot when selected', async () => {
-    vi.mocked(select).mockResolvedValue('defaults');
+  it('should fill missing components from the agent defaults without prompting', () => {
     vi.mocked(inspectConfigDirectory)
       .mockReturnValueOnce(source)
       .mockReturnValueOnce(snapshot);
 
-    await expect(
-      resolveConfigSource({ requested: '/configs', agent: 'claude' }),
-    ).resolves.toMatchObject({ path: '/snapshot', cleanup: expect.any(Function) });
+    expect(resolveConfigSource({ requested: '/configs', agent: 'claude' })).toMatchObject(
+      { path: '/snapshot', cleanup: expect.any(Function) },
+    );
     expect(mergeConfigDirectories).toHaveBeenCalledWith('/configs', '/snapshot');
-  });
-
-  it('should cancel before creating a snapshot when requested', async () => {
-    vi.mocked(select).mockResolvedValue('cancel');
-    await expect(
-      resolveConfigSource({ requested: '/configs', agent: 'claude' }),
-    ).rejects.toThrow('Cancelled');
-    expect(createAgentConfigSnapshot).not.toHaveBeenCalled();
   });
 });

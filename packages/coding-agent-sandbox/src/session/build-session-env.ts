@@ -45,6 +45,7 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
     SANDBOX_AGENT_CMD: agent.launchCommand({
       fullAccess: options.fullAccess,
       prompt: options.prompt,
+      model: options.model,
       extraArgs: options.agentArgs,
     }),
     SANDBOX_STATE_ROOT: CONTAINER_STATE_ROOT,
