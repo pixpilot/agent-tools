@@ -1,5 +1,11 @@
 # @pixpilot/agent-config-sync
 
+## 0.5.0
+
+### Minor Changes
+
+- enhance MCP server configuration with environment forwarding
+
 ## 0.4.0
 
 ### Minor Changes
