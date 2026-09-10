@@ -30,7 +30,6 @@ A bare invocation asks, in order:
 | Which coding agent should run this task?    | Claude Code                                                                    |
 | Main Git repository path                    | The repository containing the current directory                                |
 | Task name                                   | _(required)_                                                                   |
-| Initial prompt for the agent                | _(optional)_                                                                   |
 | Let the agent act without approval prompts? | Yes                                                                            |
 | Enable isolated Git history and commits?    | Yes                                                                            |
 

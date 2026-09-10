@@ -2,6 +2,7 @@ import { defineConfig } from '@internal/tsdown-config';
 
 export default defineConfig({
   entry: ['src/index.ts', 'src/cli.ts'],
+  copy: [{ from: 'schemas/*.json', to: 'dist/schemas', flatten: true }],
   dts: true,
   minify: false,
   clean: true,

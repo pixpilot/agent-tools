@@ -78,14 +78,6 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
           required: true,
         });
 
-  const requestedPrompt = initial.prompt?.trim();
-  const prompt =
-    requestedPrompt != null && requestedPrompt !== ''
-      ? (initial.prompt ?? '')
-      : await input({
-          message: 'Initial prompt for the agent (optional)',
-        });
-
   const fullAccess =
     initial.fullAccess ??
     (await confirm({
@@ -115,7 +107,6 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
     action: 'session',
     options: {
       ...initial,
-      ...(prompt.trim() === '' ? {} : { prompt }),
       agent,
       repo,
       task,
