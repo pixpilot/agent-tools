@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.13.0
+
+### Minor Changes
+
+- add --allow-dirty option for worktree creation
+
 ## 1.12.0
 
 ### Minor Changes
