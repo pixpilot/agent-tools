@@ -45,7 +45,7 @@
     "generate-packages-section": "node scripts/generate-packages-section.js"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.0",
+    "@changesets/cli": "^3.0.2",
     "@commitlint/cli": "^21.0.0",
     "@commitlint/config-conventional": "^21.0.0",
     "@internal/prettier-config": "workspace:*",
