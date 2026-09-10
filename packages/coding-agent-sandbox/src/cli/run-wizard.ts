@@ -12,6 +12,7 @@ import { readAgentSettings } from '../configs/read-agent-settings';
 import { DEFAULT_AGENT } from '../constants';
 import { DEFAULT_NETWORK_MODE } from '../network/network-mode';
 import { detectDefaultRepo } from './detect-default-repo';
+import { resolveInitialPrompt } from './resolve-initial-prompt';
 
 /** What the guided setup decided to do. */
 export type WizardResult =
@@ -26,7 +27,13 @@ const AGENT_DEFAULT = '';
  * the answers take the same defaulting path as a non-interactive invocation.
  */
 export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResult> {
-  const requestedMode = resolveRequestedMode(initial);
+  const prompt = resolveInitialPrompt(initial);
+  const { prompt: _prompt, promptFile: _promptFile, ...rest } = initial;
+  const resolvedInitial: RawCliOptions = {
+    ...rest,
+    ...(prompt == null ? {} : { prompt }),
+  };
+  const requestedMode = resolveRequestedMode(resolvedInitial);
   const action =
     requestedMode ??
     (await select<NetworkMode | 'prune'>({
@@ -59,7 +66,7 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
   const network: NetworkMode = action;
 
   const agent =
-    initial.agent ??
+    resolvedInitial.agent ??
     (await select({
       message: 'Which coding agent should run this task?',
       choices: listAgents().map((candidate) => ({
@@ -72,9 +79,9 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
   // An initial prompt makes the agent start work the moment it opens, so the
   // guided setup is the last chance to choose how it runs. Anything already
   // given on the command line is left alone.
-  const { effort, model } = await askModelSettings(agent, initial);
+  const { effort, model } = await askModelSettings(agent, resolvedInitial);
 
-  const requestedRepo = initial.repo?.trim();
+  const requestedRepo = resolvedInitial.repo?.trim();
   const repo =
     requestedRepo != null && requestedRepo !== ''
       ? requestedRepo
@@ -84,7 +91,7 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
           required: true,
         });
 
-  const requestedTask = initial.task?.trim();
+  const requestedTask = resolvedInitial.task?.trim();
   const task =
     requestedTask != null && requestedTask !== ''
       ? requestedTask
@@ -94,7 +101,7 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
         });
 
   const fullAccess =
-    initial.fullAccess ??
+    resolvedInitial.fullAccess ??
     (await confirm({
       message:
         'Let the agent act without approval prompts? (mounted data remains writable)',
@@ -102,7 +109,7 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
     }));
 
   const gitMount =
-    initial.gitMount ??
+    resolvedInitial.gitMount ??
     (await select({
       message: 'Enable isolated Git history and commits inside the container?',
       choices: [
@@ -121,7 +128,7 @@ export async function runWizard(initial: RawCliOptions = {}): Promise<WizardResu
   return {
     action: 'session',
     options: {
-      ...initial,
+      ...resolvedInitial,
       agent,
       repo,
       task,

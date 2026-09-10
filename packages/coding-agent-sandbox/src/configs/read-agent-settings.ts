@@ -1,10 +1,13 @@
 import type { AgentId } from '@pixpilot/agent-config-sync';
 import type { ReasoningEffort } from '../agents/reasoning-effort';
+import type { PromptSuffix } from './read-prompt-suffix';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseJsonc } from '@pixpilot/agent-config-sync';
 import { parseModelSpec } from '../agents/parse-model-spec';
 import { KNOWN_EFFORTS, parseReasoningEffort } from '../agents/reasoning-effort';
+import { readOptionalString } from './read-optional-string';
+import { readPromptSuffix } from './read-prompt-suffix';
 
 /** Filenames recognized as the portable per-agent launch settings. */
 const SETTINGS_FILES = ['agents.jsonc', 'agents.json'] as const;
@@ -31,6 +34,8 @@ export interface AgentSettings {
   effort?: ReasoningEffort | undefined;
   /** Models available to integrations for selection, one entry per model. */
   models?: readonly ModelChoice[] | undefined;
+  /** Shared instructions appended to a non-empty initial prompt. */
+  promptSuffix?: PromptSuffix | undefined;
 }
 
 /**
@@ -58,11 +63,13 @@ export function readAgentSettings(
     readOptionalEffort(forAgent['effort'] ?? defaults['effort'], file, 'effort') ??
     spec.effort;
   const models = readModelChoices(forAgent['models'] ?? defaults['models'], file);
+  const promptSuffix = readPromptSuffix([forAgent, defaults], file);
 
   return {
     ...(spec.model == null ? {} : { model: spec.model }),
     ...(effort == null ? {} : { effort }),
     ...(models == null ? {} : { models }),
+    ...(promptSuffix == null ? {} : { promptSuffix }),
   };
 }
 
@@ -84,18 +91,6 @@ function readObject(value: unknown, file: string, key?: string): Record<string, 
     );
   }
   return value as Record<string, unknown>;
-}
-
-function readOptionalString(
-  value: unknown,
-  file: string,
-  key: string,
-): string | undefined {
-  if (value === undefined) return undefined;
-  if (typeof value !== 'string' || value.trim() === '') {
-    throw new TypeError(`"${key}" must be a non-empty string: ${file}`);
-  }
-  return value.trim();
 }
 
 function readOptionalEffort(

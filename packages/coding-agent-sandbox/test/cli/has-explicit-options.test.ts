@@ -13,11 +13,15 @@ function parse(argv: readonly string[]): boolean {
 }
 
 describe('hasExplicitOptions', () => {
-  it('should expose prompt and configs-dir, but not the legacy skills-dir option', () => {
+  it('should expose prompt options and configs-dir, but not the legacy skills-dir option', () => {
     const options = createProgram('0.0.0').options.map((option) => option.long);
     expect(options).toContain('--prompt');
+    expect(options).toContain('--prompt-file');
     expect(options).toContain('--configs-dir');
     expect(options).not.toContain('--skills-dir');
+    expect(createProgram('0.0.0').helpInformation()).toContain(
+      'Read the initial prompt from a UTF-8 file',
+    );
   });
 
   it('should report false for a bare invocation', () => {

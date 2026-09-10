@@ -44,6 +44,16 @@
             "$ref": "#/$defs/modelChoice"
           },
           "uniqueItems": true
+        },
+        "prompt": {
+          "description": "Shared instructions appended to a non-empty initial prompt. A session started without a prompt is left untouched.",
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "promptFile": {
+          "description": "File holding the shared instructions, resolved against this file's directory. Wins over \"prompt\" in the same entry.",
+          "type": "string",
+          "pattern": "\\S"
         }
       },
       "additionalProperties": false

@@ -24,20 +24,20 @@ With no `--repo`, the repository containing the current directory is used. With 
 
 A bare invocation asks, in order:
 
-| Question                                    | Default                                                                        |
-| ------------------------------------------- | ------------------------------------------------------------------------------ |
-| What would you like to do?                  | Start a `strict`, `open` or no-network session — or prune unused cache volumes |
-| Which coding agent should run this task?    | Claude Code                                                                    |
-| Which model should the agent use?           | _Only with `--prompt`_ — the `agents.jsonc` model, or the agent's own default  |
-| How much reasoning effort should it use?    | _Only with `--prompt`_ — the model’s `efforts` from `agents.jsonc`             |
-| Main Git repository path                    | The repository containing the current directory                                |
-| Task name                                   | _(required)_                                                                   |
-| Let the agent act without approval prompts? | Yes                                                                            |
-| Enable isolated Git history and commits?    | Yes                                                                            |
+| Question                                    | Default                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| What would you like to do?                  | Start a `strict`, `open` or no-network session — or prune unused cache volumes       |
+| Which coding agent should run this task?    | Claude Code                                                                          |
+| Which model should the agent use?           | _Only with an initial prompt_ — the `agents.jsonc` model, or the agent's own default |
+| How much reasoning effort should it use?    | _Only with an initial prompt_ — the model’s `efforts` from `agents.jsonc`            |
+| Main Git repository path                    | The repository containing the current directory                                      |
+| Task name                                   | _(required)_                                                                         |
+| Let the agent act without approval prompts? | Yes                                                                                  |
+| Enable isolated Git history and commits?    | Yes                                                                                  |
 
 The guided setup needs a terminal. Without one, use `--yes --task` and any other options instead.
 
-`--prompt` makes the agent start working the moment it opens, leaving no chance to switch models first — so the model and effort questions appear only then, and only for whichever of `--model`/`--effort` was left off. With `models` configured in `agents.jsonc` they are pickers over those entries; otherwise the model is free text. Either can be left as the agent default.
+`--prompt` or `--prompt-file` makes the agent start working the moment it opens, leaving no chance to switch models first — so the model and effort questions appear only then, and only for whichever of `--model`/`--effort` was left off. With `models` configured in `agents.jsonc` they are pickers over those entries; otherwise the model is free text. Either can be left as the agent default.
 
 ## What a session does
 
@@ -75,6 +75,7 @@ portable configs directory                                  -> /coding-agent-san
 | `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                         |
 | `--image <tag>`           | Use an existing image instead of building the bundled one                                    |
 | `--prompt <text>`         | Initial prompt passed safely to the selected agent                                           |
+| `--prompt-file <path>`    | Read the initial prompt from a UTF-8 file; cannot be combined with `--prompt`                |
 | `--model <name>`          | Model the agent should use; overrides `agents.jsonc`. Accepts a `<model>:<effort>` shorthand |
 | `--effort <level>`        | Reasoning effort, e.g. `low`/`high`/`xhigh`/`max`; the levels are agent-specific             |
 | `--agent-args <args>`     | Trusted shell text appended to the agent command                                             |
@@ -111,6 +112,10 @@ npx @pixpilot/coding-agent-sandbox --agent codex --task "hotfix login" --base re
 npx @pixpilot/coding-agent-sandbox --agent codex --task "fix login" \
   --prompt "Investigate and fix the login failure. Run relevant tests."
 
+# Start Codex with a multi-line initial prompt from a file
+npx @pixpilot/coding-agent-sandbox --agent codex --task "fix login" \
+  --prompt-file .\prompt.md
+
 # Keep approval prompts on, and pass an agent flag through
 npx @pixpilot/coding-agent-sandbox --agent claude --task "risky refactor" \
   --full-access false --agent-args "--verbose"
@@ -125,6 +130,10 @@ npx @pixpilot/coding-agent-sandbox --agent codex --task "fix login" \
 # See exactly what would run, without creating a worktree or a container
 npx @pixpilot/coding-agent-sandbox --agent claude --task "fix resume generation" --dry-run --yes
 ```
+
+### Multi-line prompts on Windows
+
+When launched with `npx` on Windows, `cmd.exe` truncates a multi-line `--prompt` before this CLI receives it. Put the prompt in a UTF-8 file and pass `--prompt-file <path>` instead; its trailing whitespace is removed, and the file is only read — never moved or deleted. Relative paths resolve from the current directory.
 
 ## Worktrees and branches
 
@@ -182,6 +191,24 @@ An optional `agents.jsonc` (or `agents.json`) in `--configs-dir` sets per-agent 
 Precedence is `--model`/`--effort` > the agent’s own entry > `$defaults`. Model names are agent-specific and passed through unvalidated; `effort` is lower-cased and checked for shape only, then mapped onto whichever setting the agent CLI actually exposes.
 
 `models` is an optional list for integrations (such as a model picker); it does not affect launch selection. Each entry is either a bare name or an object with `name` plus optional `label`, `efforts` (the levels to offer with it) and `effort` (the level to preselect).
+
+### Shared prompt instructions
+
+`prompt` holds instructions inline; `promptFile` names a file holding them, resolved against the settings file's own directory. Either one is appended to `--prompt`, separated by a blank line — so put long instructions in a file and keep them reviewable.
+
+```jsonc
+{
+  // Appended to every agent's prompt, from <configs-dir>/prompt.md.
+  "$defaults": { "promptFile": "./prompt.md" },
+  "claude": { "prompt": "Prefer small, reviewable commits." },
+}
+```
+
+They apply **only when the session starts with `--prompt` or `--prompt-file`**. An agent opened without one waits for its first instruction, and shared rules are not a task of their own.
+
+The first entry naming either key wins as a whole: an agent's own instructions replace `$defaults` rather than adding to them, and within one entry `promptFile` wins over `prompt`. A file that is missing or empty fails the session rather than launching an agent without the rules the settings promised.
+
+Keep that file out of `prompts/` — that directory is synced into the container as the agent's own prompt commands.
 
 ### Reasoning effort
 

@@ -14,7 +14,7 @@ export {
   parseModelSpec,
   parseReasoningEffort,
 } from './agents/index';
-export type { AgentSettings, ModelChoice } from './configs/index';
+export type { AgentSettings, ModelChoice, PromptSuffix } from './configs/index';
 export { readAgentSettings, resolveConfigSource } from './configs/index';
 export * from './constants';
 export {
@@ -45,6 +45,6 @@ export {
   sessionNetworkNames,
   usesProxy,
 } from './network/index';
-export { ensureWorktreeSourceIsClean, runSandbox } from './session/index';
+export { composePrompt, ensureWorktreeSourceIsClean, runSandbox } from './session/index';
 export type * from './types';
 export { slugify } from './utils/slugify';

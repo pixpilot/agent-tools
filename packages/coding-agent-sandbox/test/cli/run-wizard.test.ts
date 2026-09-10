@@ -47,6 +47,15 @@ function configsDir(settings: unknown): string {
   return root;
 }
 
+/** Writes an initial-prompt file that the wizard can resolve before it asks questions. */
+function promptFile(contents: string): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wizard-prompt-'));
+  directories.push(root);
+  const file = path.join(root, 'prompt.md');
+  fs.writeFileSync(file, contents, 'utf8');
+  return file;
+}
+
 describe('runWizard', () => {
   beforeEach(() => {
     selectMock.mockReset();
@@ -165,6 +174,18 @@ describe('runWizard', () => {
         options: { model: 'gpt-5.1-codex-max', effort: 'high' },
       },
     );
+  });
+
+  it('should treat a prompt file as an initial prompt', async () => {
+    const file = promptFile('ship it\n');
+    queue({
+      select: ['strict', 'high', true],
+      input: ['gpt-5.1-codex-max', '/work/app', 'fix login'],
+    });
+
+    await expect(runWizard({ agent: 'codex', promptFile: file })).resolves.toMatchObject({
+      options: { prompt: 'ship it', model: 'gpt-5.1-codex-max', effort: 'high' },
+    });
   });
 
   it('should offer the configured models and their efforts as choices', async () => {

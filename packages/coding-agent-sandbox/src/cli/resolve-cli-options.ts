@@ -1,12 +1,13 @@
 import type { SandboxOptions } from '../types';
+import type { InitialPromptOptions } from './resolve-initial-prompt';
 import { DEFAULT_AGENT } from '../constants';
 import { detectDefaultRepo } from './detect-default-repo';
+import { resolveInitialPrompt } from './resolve-initial-prompt';
 import { resolveNetworkMode } from './resolve-network-mode';
 
 /** Raw option bag produced by Commander or by the guided setup. */
-export interface RawCliOptions extends Partial<
-  Omit<SandboxOptions, 'agent' | 'repo' | 'task'>
-> {
+export interface RawCliOptions
+  extends Partial<Omit<SandboxOptions, 'agent' | 'repo' | 'task'>>, InitialPromptOptions {
   agent?: string | undefined;
   repo?: string | undefined;
   task?: string | undefined;
@@ -20,7 +21,8 @@ export interface RawCliOptions extends Partial<
  */
 export function resolveCliOptions(raw: RawCliOptions): SandboxOptions {
   // `offline` is resolved into `network` and must not survive as a second source of truth.
-  const { offline: _offline, ...rest } = raw;
+  const { offline: _offline, prompt: _prompt, promptFile: _promptFile, ...rest } = raw;
+  const prompt = resolveInitialPrompt(raw);
   const task = raw.task?.trim();
 
   if (task == null || task === '') {
@@ -33,6 +35,7 @@ export function resolveCliOptions(raw: RawCliOptions): SandboxOptions {
 
   return {
     ...rest,
+    ...(prompt == null ? {} : { prompt }),
     agent: raw.agent ?? DEFAULT_AGENT,
     repo: repo != null && repo !== '' ? repo : detectDefaultRepo(),
     task,

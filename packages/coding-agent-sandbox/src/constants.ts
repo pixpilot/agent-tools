@@ -45,3 +45,6 @@ export const HOME_CACHE_VOLUME = 'coding-agent-sandbox-cache-home';
 export const PACKAGE_CACHE_VOLUME = 'coding-agent-sandbox-package-cache';
 
 export const EXIT_CODE_ERROR = 1;
+
+/** Length past which an initial prompt is reported as unusually long. */
+export const PROMPT_WARN_CHARS = 32_000;

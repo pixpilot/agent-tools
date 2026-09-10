@@ -32,6 +32,7 @@ export function createProgram(version: string): Command {
     .option('--base <ref>', 'Base ref for a newly created branch')
     .option('--image <tag>', 'Use an existing image instead of the bundled one')
     .option('--prompt <text>', 'Initial prompt passed safely to the agent')
+    .option('--prompt-file <path>', 'Read the initial prompt from a UTF-8 file')
     .option(
       '--model <name>',
       'Model the agent should use; overrides agents.jsonc in --configs-dir. Accepts a <model>:<effort> shorthand',

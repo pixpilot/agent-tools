@@ -183,4 +183,77 @@ describe('readAgentSettings', () => {
       ),
     ).toThrow(/"models\[\]\.efforts" must be an effort level/u);
   });
+
+  it('should read the shared prompt from the file the entry names', () => {
+    const root = configsDir({
+      'agents.json': '{ "codex": { "promptFile": "./prompt.md" } }',
+      'prompt.md': '\nAlways run the linter.\n',
+    });
+
+    expect(readAgentSettings(root, 'codex')).toEqual({
+      promptSuffix: { text: 'Always run the linter.', source: './prompt.md' },
+    });
+  });
+
+  it('should read a shared prompt written inline', () => {
+    const root = configsDir({
+      'agents.json': '{ "codex": { "prompt": "  Always run the linter.  " } }',
+    });
+
+    expect(readAgentSettings(root, 'codex')).toEqual({
+      promptSuffix: { text: 'Always run the linter.', source: 'agents.json' },
+    });
+  });
+
+  it('should prefer the prompt file over an inline prompt in the same entry', () => {
+    const root = configsDir({
+      'agents.json': '{ "codex": { "prompt": "inline", "promptFile": "./prompt.md" } }',
+      'prompt.md': 'from the file',
+    });
+
+    expect(readAgentSettings(root, 'codex')).toEqual({
+      promptSuffix: { text: 'from the file', source: './prompt.md' },
+    });
+  });
+
+  it('should let the agent entry replace the $defaults prompt entirely', () => {
+    const root = configsDir({
+      'agents.json': `{
+        "$defaults": { "promptFile": "./shared.md" },
+        "codex": { "prompt": "codex only" }
+      }`,
+      'shared.md': 'shared instructions',
+    });
+
+    expect(readAgentSettings(root, 'codex')).toEqual({
+      promptSuffix: { text: 'codex only', source: 'agents.json' },
+    });
+    expect(readAgentSettings(root, 'claude')).toEqual({
+      promptSuffix: { text: 'shared instructions', source: './shared.md' },
+    });
+  });
+
+  it('should reject a prompt file that is missing or empty', () => {
+    expect(() =>
+      readAgentSettings(
+        configsDir({ 'agents.json': '{ "codex": { "promptFile": "./gone.md" } }' }),
+        'codex',
+      ),
+    ).toThrow(/"promptFile" is not a file/u);
+    expect(() =>
+      readAgentSettings(
+        configsDir({
+          'agents.json': '{ "codex": { "promptFile": "./prompt.md" } }',
+          'prompt.md': '   \n',
+        }),
+        'codex',
+      ),
+    ).toThrow(/"promptFile" is empty/u);
+    expect(() =>
+      readAgentSettings(
+        configsDir({ 'agents.json': '{ "codex": { "prompt": 5 } }' }),
+        'codex',
+      ),
+    ).toThrow(/"prompt" must be a non-empty string/u);
+  });
 });

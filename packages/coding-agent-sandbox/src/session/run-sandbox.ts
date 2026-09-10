@@ -7,6 +7,7 @@ import { getAgent } from '../agents/agent-registry';
 import { parseModelSpec } from '../agents/parse-model-spec';
 import { readAgentSettings } from '../configs/read-agent-settings';
 import { resolveConfigSource } from '../configs/resolve-config-source';
+import { PROMPT_WARN_CHARS } from '../constants';
 import { ensureDocker } from '../docker/ensure-docker';
 import { ensureImage } from '../docker/ensure-image';
 import { ensureProxyImage } from '../docker/ensure-proxy-image';
@@ -39,6 +40,7 @@ import { detail, step, success, warn } from '../utils/logger';
 import { buildContainerName } from './build-container-name';
 import { buildSessionEnv } from './build-session-env';
 import { buildSessionVolumes } from './build-session-volumes';
+import { composePrompt } from './compose-prompt';
 import { ensureNoActiveContainer } from './ensure-no-active-container';
 import { ensureWorktreeSourceIsClean } from './ensure-worktree-source-is-clean';
 import { printSessionPlan } from './print-session-plan';
@@ -86,15 +88,31 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   const settings = readAgentSettings(options.configsDir, agent.id as AgentId);
   const requested = parseModelSpec(options.model);
   const effort = options.effort ?? requested.effort ?? settings.effort;
+  // Shared instructions from `agents.jsonc` extend a prompt the user gave;
+  // a session opened without one still opens idle.
+  const prompt = composePrompt(options.prompt, settings.promptSuffix?.text);
   const session: SandboxOptions = {
     ...options,
     model: requested.model ?? settings.model,
     effort,
+    prompt,
   };
 
   if (effort != null && !agent.supportsEffort) {
     warn(
       `${agent.label} has no reasoning-effort setting: --effort ${effort} is ignored.`,
+    );
+  }
+
+  if (settings.promptSuffix != null && prompt !== options.prompt) {
+    detail(
+      `prompt suffix: ${settings.promptSuffix.source} (${settings.promptSuffix.text.length} chars)`,
+    );
+  }
+
+  if (prompt != null && prompt.length > PROMPT_WARN_CHARS) {
+    warn(
+      `The initial prompt is ${prompt.length} characters; agent CLIs may truncate a prompt this long.`,
     );
   }
 
