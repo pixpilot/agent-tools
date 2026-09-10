@@ -1,5 +1,11 @@
 # @pixpilot/agent-config-sync
 
+## 0.11.0
+
+### Minor Changes
+
+- add support for shared prompt instructions
+
 ## 0.10.0
 
 ### Minor Changes

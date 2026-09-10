@@ -1,5 +1,16 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.14.0
+
+### Minor Changes
+
+- add support for shared prompt instructions
+
+### Patch Changes
+
+- Updated dependencies
+  - @pixpilot/agent-config-sync@0.11.0
+
 ## 1.13.0
 
 ### Minor Changes
