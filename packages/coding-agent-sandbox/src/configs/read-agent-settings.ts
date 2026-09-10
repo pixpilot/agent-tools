@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseJsonc } from '@pixpilot/agent-config-sync';
 import { parseModelSpec } from '../agents/parse-model-spec';
-import { isReasoningEffort, REASONING_EFFORTS } from '../agents/reasoning-effort';
+import { KNOWN_EFFORTS, parseReasoningEffort } from '../agents/reasoning-effort';
 
 /** Filenames recognized as the portable per-agent launch settings. */
 const SETTINGS_FILES = ['agents.jsonc', 'agents.json'] as const;
@@ -27,7 +27,7 @@ export interface ModelChoice {
 export interface AgentSettings {
   /** Agent-specific model name, passed through to the agent CLI unvalidated. */
   model?: string | undefined;
-  /** Reasoning effort, mapped onto whichever flag the agent CLI understands. */
+  /** Reasoning effort, mapped onto whichever setting the agent CLI understands. */
   effort?: ReasoningEffort | undefined;
   /** Models available to integrations for selection, one entry per model. */
   models?: readonly ModelChoice[] | undefined;
@@ -104,13 +104,17 @@ function readOptionalEffort(
   key: string,
 ): ReasoningEffort | undefined {
   if (value === undefined) return undefined;
-  const effort = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  if (!isReasoningEffort(effort)) {
+  if (typeof value !== 'string') {
+    throw new TypeError(`"${key}" must be an effort level: ${file}`);
+  }
+  try {
+    // Levels are agent-specific, so only the shape is checked here.
+    return parseReasoningEffort(value);
+  } catch {
     throw new TypeError(
-      `"${key}" must be one of ${REASONING_EFFORTS.join(', ')}: ${file}`,
+      `"${key}" must be an effort level such as ${KNOWN_EFFORTS.join(', ')}: ${file}`,
     );
   }
-  return effort;
 }
 
 /**
@@ -165,16 +169,12 @@ function readEfforts(
 ): readonly ReasoningEffort[] | undefined {
   if (value === undefined) return undefined;
   if (!Array.isArray(value)) {
-    throw new TypeError(
-      `"models[].efforts" must contain ${REASONING_EFFORTS.join(', ')}: ${file}`,
-    );
+    throw new TypeError(`"models[].efforts" must contain effort levels: ${file}`);
   }
   return value.map((entry: unknown) => {
     const effort = readOptionalEffort(entry, file, 'models[].efforts');
     if (effort == null) {
-      throw new TypeError(
-        `"models[].efforts" must contain ${REASONING_EFFORTS.join(', ')}: ${file}`,
-      );
+      throw new TypeError(`"models[].efforts" must contain effort levels: ${file}`);
     }
     return effort;
   });

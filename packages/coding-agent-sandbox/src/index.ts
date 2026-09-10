@@ -8,11 +8,11 @@ export {
   CodexAgent,
   CopilotAgent,
   getAgent,
-  isReasoningEffort,
+  isKnownEffort,
+  KNOWN_EFFORTS,
   listAgents,
   parseModelSpec,
   parseReasoningEffort,
-  REASONING_EFFORTS,
 } from './agents/index';
 export type { AgentSettings, ModelChoice } from './configs/index';
 export { readAgentSettings, resolveConfigSource } from './configs/index';

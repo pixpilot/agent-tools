@@ -112,13 +112,22 @@ describe('agent launch commands', () => {
     );
   });
 
-  it('should drop the reasoning effort for agents without an equivalent flag', () => {
+  it('should pass the effort straight through for agents that spell it --effort', () => {
     for (const agent of [getAgent('claude'), getAgent('copilot')]) {
-      expect(agent.effortArgs('high')).toBeUndefined();
-      expect(agent.launchCommand({ fullAccess: false, effort: 'high' })).toBe(
-        agent.binary,
+      expect(agent.launchCommand({ fullAccess: false, effort: 'xhigh' })).toBe(
+        `${agent.binary} --effort 'xhigh'`,
       );
     }
+  });
+
+  it('should map a level this package does not know about', () => {
+    expect(getAgent('codex').launchCommand({ fullAccess: false, effort: 'ultra' })).toBe(
+      "codex -c 'model_reasoning_effort=ultra'",
+    );
+  });
+
+  it('should report that every supported agent has an effort setting', () => {
+    expect(listAgents().map((agent) => agent.supportsEffort)).toEqual([true, true, true]);
   });
 
   it('should place the effort between the model and extra arguments', () => {

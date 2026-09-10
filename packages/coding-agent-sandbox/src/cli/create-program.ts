@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { listAgents } from '../agents/agent-registry';
-import { parseReasoningEffort, REASONING_EFFORTS } from '../agents/reasoning-effort';
+import { KNOWN_EFFORTS, parseReasoningEffort } from '../agents/reasoning-effort';
 import { NETWORK_MODES, parseNetworkMode } from '../network/network-mode';
 import { parseBoolean } from './parse-boolean';
 import { parsePidsLimit } from './parse-pids-limit';
@@ -38,7 +38,7 @@ export function createProgram(version: string): Command {
     )
     .option(
       '--effort <level>',
-      `Reasoning effort (${REASONING_EFFORTS.join(' | ')}); ignored by agents without one`,
+      `Reasoning effort, e.g. ${KNOWN_EFFORTS.join(' | ')}; the levels are agent-specific`,
       parseReasoningEffort,
     )
     .option('--agent-args <args>', 'Trusted shell text appended to the agent command')

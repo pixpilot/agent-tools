@@ -92,7 +92,7 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     effort,
   };
 
-  if (effort != null && agent.effortArgs(effort) == null) {
+  if (effort != null && !agent.supportsEffort) {
     warn(
       `${agent.label} has no reasoning-effort setting: --effort ${effort} is ignored.`,
     );

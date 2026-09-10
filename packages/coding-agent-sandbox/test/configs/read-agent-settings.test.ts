@@ -164,10 +164,10 @@ describe('readAgentSettings', () => {
     ).toThrow(/"models" must contain non-empty strings/u);
     expect(() =>
       readAgentSettings(
-        configsDir({ 'agents.json': '{ "codex": { "effort": "turbo" } }' }),
+        configsDir({ 'agents.json': '{ "codex": { "effort": "very high" } }' }),
         'codex',
       ),
-    ).toThrow(/"effort" must be one of minimal, low, medium, high, xhigh/u);
+    ).toThrow(/"effort" must be an effort level/u);
     expect(() =>
       readAgentSettings(
         configsDir({ 'agents.json': '{ "codex": { "models": [{ "efforts": [] }] } }' }),
@@ -177,11 +177,10 @@ describe('readAgentSettings', () => {
     expect(() =>
       readAgentSettings(
         configsDir({
-          'agents.json':
-            '{ "codex": { "models": [{ "name": "m", "efforts": ["turbo"] }] } }',
+          'agents.json': '{ "codex": { "models": [{ "name": "m", "efforts": [7] }] } }',
         }),
         'codex',
       ),
-    ).toThrow(/"models\[\]\.efforts" must be one of/u);
+    ).toThrow(/"models\[\]\.efforts" must be an effort level/u);
   });
 });

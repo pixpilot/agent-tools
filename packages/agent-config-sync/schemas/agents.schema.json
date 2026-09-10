@@ -34,7 +34,7 @@
           "pattern": "\\S"
         },
         "effort": {
-          "description": "Default reasoning effort. Ignored by agents whose CLI has no equivalent flag.",
+          "description": "Default reasoning effort. Ignored by agents whose CLI has no equivalent setting.",
           "$ref": "#/$defs/effort"
         },
         "models": {
@@ -89,8 +89,17 @@
       ]
     },
     "effort": {
-      "description": "How much reasoning the model should spend before answering.",
-      "enum": ["minimal", "low", "medium", "high", "xhigh"]
+      "description": "How much reasoning the model should spend before answering. Levels are agent-specific - the suggestions below are the common ones, and any other name the agent CLI accepts is valid.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "anyOf": [
+        {
+          "enum": ["minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
+        },
+        {
+          "type": "string"
+        }
+      ]
     }
   }
 }

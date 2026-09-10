@@ -1,5 +1,5 @@
 import type { ReasoningEffort } from './reasoning-effort';
-import { isReasoningEffort } from './reasoning-effort';
+import { isKnownEffort } from './reasoning-effort';
 
 /** A model name with the reasoning effort it should run at, when one is given. */
 export interface ModelSpec {
@@ -11,10 +11,11 @@ export interface ModelSpec {
  * Splits the `<model>:<effort>` shorthand accepted by `--model` and by
  * `agents.jsonc`.
  *
- * The suffix is only taken as an effort when it is one of the known levels, so
+ * The suffix is only taken as an effort when it is one of `KNOWN_EFFORTS`, so
  * model names that legitimately contain `:` or `/` - `vendor/model:tag`,
  * `provider/name` - survive untouched. That keeps the name an opaque
- * pass-through, which is the whole contract of `--model`.
+ * pass-through, which is the whole contract of `--model`. A level outside that
+ * list still works, through `--effort` or `agents.jsonc`.
  */
 export function parseModelSpec(value: string | undefined): ModelSpec {
   const spec = value?.trim();
@@ -31,7 +32,7 @@ export function parseModelSpec(value: string | undefined): ModelSpec {
 
   const suffix = spec.slice(separator + 1).toLowerCase();
 
-  if (!isReasoningEffort(suffix)) {
+  if (!isKnownEffort(suffix)) {
     return { model: spec };
   }
 

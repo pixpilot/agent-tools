@@ -1,6 +1,10 @@
 import type { Mock } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { confirm, input, select } from '@inquirer/prompts';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { KNOWN_EFFORTS } from '../../src/agents/reasoning-effort';
 import { detectDefaultRepo } from '../../src/cli/detect-default-repo';
 import { runWizard } from '../../src/cli/run-wizard';
 
@@ -33,12 +37,28 @@ function queue(answers: {
   confirmMock.mockImplementation(async () => answers.confirm?.[confirms++] ?? true);
 }
 
+const directories: string[] = [];
+
+/** Writes an `agents.jsonc` the wizard can read through `--configs-dir`. */
+function configsDir(settings: unknown): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wizard-configs-'));
+  directories.push(root);
+  fs.writeFileSync(path.join(root, 'agents.jsonc'), JSON.stringify(settings));
+  return root;
+}
+
 describe('runWizard', () => {
   beforeEach(() => {
     selectMock.mockReset();
     inputMock.mockReset();
     confirmMock.mockReset();
     vi.mocked(detectDefaultRepo).mockClear();
+  });
+
+  afterEach(() => {
+    for (const directory of directories.splice(0)) {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it('should short-circuit on prune without asking anything else', async () => {
@@ -119,12 +139,132 @@ describe('runWizard', () => {
   });
 
   it('should preserve a supplied prompt without prompting for a prompt', async () => {
-    queue({ select: ['strict', true], input: ['fix login'], confirm: [false] });
+    queue({
+      select: ['strict', '', true],
+      input: ['', '/work/app', 'fix login'],
+      confirm: [false],
+    });
 
-    await expect(runWizard({ prompt: 'Fix the login flow' })).resolves.toMatchObject({
+    await expect(
+      runWizard({ agent: 'claude', prompt: 'Fix the login flow' }),
+    ).resolves.toMatchObject({
       action: 'session',
       options: { prompt: 'Fix the login flow' },
     });
+  });
+
+  it('should ask for the model and effort when a prompt will start the session', async () => {
+    queue({
+      select: ['strict', 'high', true],
+      input: ['gpt-5.1-codex-max', '/work/app', 'fix login'],
+    });
+
+    await expect(runWizard({ agent: 'codex', prompt: 'ship it' })).resolves.toMatchObject(
+      {
+        action: 'session',
+        options: { model: 'gpt-5.1-codex-max', effort: 'high' },
+      },
+    );
+  });
+
+  it('should offer the configured models and their efforts as choices', async () => {
+    const root = configsDir({
+      codex: {
+        model: 'gpt-5.1-codex-max',
+        effort: 'high',
+        models: [
+          { name: 'gpt-5.1-codex-max', label: 'Codex Max', efforts: ['low', 'high'] },
+          'gpt-5.1-codex-mini',
+        ],
+      },
+    });
+    queue({
+      select: ['strict', 'gpt-5.1-codex-max', 'low', true],
+      input: ['/work/app', 'fix login'],
+    });
+
+    await expect(
+      runWizard({ agent: 'codex', prompt: 'ship it', configsDir: root }),
+    ).resolves.toMatchObject({
+      options: { model: 'gpt-5.1-codex-max', effort: 'low' },
+    });
+    expect(selectMock.mock.calls[1]?.[0]).toMatchObject({
+      default: 'gpt-5.1-codex-max',
+      choices: [
+        { name: 'Codex Max', value: 'gpt-5.1-codex-max' },
+        { name: 'gpt-5.1-codex-mini', value: 'gpt-5.1-codex-mini' },
+        { name: 'Agent default', value: '' },
+      ],
+    });
+    expect(selectMock.mock.calls[2]?.[0]).toMatchObject({
+      default: 'high',
+      choices: [
+        { name: 'low', value: 'low' },
+        { name: 'high', value: 'high' },
+        { name: 'Agent default', value: '' },
+      ],
+    });
     expect(inputMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('should leave both unset when the agent default is chosen', async () => {
+    queue({ select: ['strict', '', true], input: ['', '/work/app', 'fix login'] });
+
+    const result = await runWizard({ agent: 'codex', prompt: 'ship it' });
+
+    expect(result).toStrictEqual({
+      action: 'session',
+      options: {
+        agent: 'codex',
+        prompt: 'ship it',
+        repo: '/work/app',
+        task: 'fix login',
+        fullAccess: true,
+        gitMount: true,
+        network: 'strict',
+      },
+    });
+  });
+
+  it('should skip both questions when the command line already answered them', async () => {
+    queue({ select: ['strict', true], input: ['/work/app', 'fix login'] });
+
+    await expect(
+      runWizard({
+        agent: 'codex',
+        prompt: 'ship it',
+        model: 'gpt-5.1-codex',
+        effort: 'low',
+      }),
+    ).resolves.toMatchObject({
+      options: { model: 'gpt-5.1-codex', effort: 'low' },
+    });
+    expect(inputMock).toHaveBeenCalledTimes(2);
+    expect(selectMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('should skip the effort question when the model carries the shorthand', async () => {
+    queue({ select: ['strict', true], input: ['/work/app', 'fix login'] });
+
+    await expect(
+      runWizard({ agent: 'codex', prompt: 'ship it', model: 'gpt-5.1-codex-max:high' }),
+    ).resolves.toMatchObject({
+      options: { model: 'gpt-5.1-codex-max:high', effort: 'high' },
+    });
+    expect(selectMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('should offer the shorthand levels when agents.jsonc lists none', async () => {
+    queue({ select: ['strict', 'max', true], input: ['opus', '/work/app', 'fix login'] });
+
+    await expect(
+      runWizard({ agent: 'claude', prompt: 'ship it' }),
+    ).resolves.toMatchObject({ options: { model: 'opus', effort: 'max' } });
+    expect(selectMock.mock.calls[1]?.[0]).toMatchObject({
+      choices: [
+        ...KNOWN_EFFORTS.map((level) => ({ name: level, value: level })),
+        { name: 'Agent default', value: '' },
+      ],
+    });
   });
 });

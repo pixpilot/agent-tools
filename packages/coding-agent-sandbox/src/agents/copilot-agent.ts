@@ -1,5 +1,6 @@
 import type { AgentAuthConfig, AgentLaunchOptions } from '../types';
-import { AgentAdapter } from './agent-adapter';
+import type { ReasoningEffort } from './reasoning-effort';
+import { AgentAdapter, quoteShellArgument } from './agent-adapter';
 
 /** GitHub Copilot CLI. */
 export class CopilotAgent extends AgentAdapter {
@@ -27,6 +28,11 @@ export class CopilotAgent extends AgentAdapter {
       ['copilot', options.fullAccess ? '--allow-all-tools' : undefined],
       options,
     );
+  }
+
+  // Copilot spells it `--effort`, aliased as `--reasoning-effort`.
+  override effortArgs(effort: ReasoningEffort): string {
+    return `--effort ${quoteShellArgument(effort)}`;
   }
 
   override postSyncCommand(): string {

@@ -1,34 +1,45 @@
 /**
  * How much reasoning the model should spend before answering.
  *
- * The names come from the agent CLIs that expose the setting at all; they are
- * normalized here so one `--effort` value can be mapped onto whichever flag the
- * selected agent actually understands.
+ * Every agent CLI names its own levels and adds to them between releases -
+ * Claude Code lists five, Copilot four, Codex six - so this stays a plain token
+ * handed to the agent, exactly like the model name, instead of a closed set
+ * this package owns and has to chase.
  */
-export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+export type ReasoningEffort = string;
 
-export const REASONING_EFFORTS: readonly ReasoningEffort[] = [
+/**
+ * The levels the `<model>:<effort>` shorthand recognizes. `--effort` and
+ * `agents.jsonc` accept any level the agent supports; this list only decides
+ * when a suffix is an effort rather than part of the model name.
+ */
+export const KNOWN_EFFORTS = [
   'minimal',
   'low',
   'medium',
   'high',
   'xhigh',
-];
+  'max',
+  'ultra',
+] as const;
 
-/** Parses an `--effort` value, rejecting anything that is not a known level. */
+/** Rejects whitespace and quoting, so a level is always one safe shell token. */
+const EFFORT_PATTERN = /^[a-z][a-z0-9-]*$/u;
+
+/** Parses an `--effort` value, normalizing case and rejecting non-tokens. */
 export function parseReasoningEffort(value: string): ReasoningEffort {
   const effort = value.trim().toLowerCase();
 
-  if (!isReasoningEffort(effort)) {
+  if (!EFFORT_PATTERN.test(effort)) {
     throw new Error(
-      `Unknown --effort level ${JSON.stringify(value)}. Expected ${REASONING_EFFORTS.join(', ')}.`,
+      `Invalid --effort level ${JSON.stringify(value)}. Expected a name such as ${KNOWN_EFFORTS.join(', ')}.`,
     );
   }
 
   return effort;
 }
 
-/** True when the value is one of the normalized effort levels. */
-export function isReasoningEffort(value: string): value is ReasoningEffort {
-  return (REASONING_EFFORTS as readonly string[]).includes(value);
+/** True for a level the `<model>:<effort>` shorthand splits on. */
+export function isKnownEffort(value: string): boolean {
+  return (KNOWN_EFFORTS as readonly string[]).includes(value);
 }

@@ -39,11 +39,16 @@ export abstract class AgentAdapter {
 
   /**
    * Flags that select the reasoning effort, or `undefined` when this agent's
-   * CLI has no equivalent. Unlike `--model`, effort is spelled differently by
-   * every CLI, so it cannot be passed straight through.
+   * CLI has no equivalent. Most spell it `--effort`, but not all, so it cannot
+   * be passed straight through the way `--model` is.
    */
   effortArgs(_effort: ReasoningEffort): string | undefined {
     return undefined;
+  }
+
+  /** True when this agent has a reasoning-effort setting to map onto. */
+  get supportsEffort(): boolean {
+    return this.effortArgs('medium') != null;
   }
 
   /** Docker volume holding this agent's credentials and settings. */

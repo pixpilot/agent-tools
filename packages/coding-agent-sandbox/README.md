@@ -28,12 +28,16 @@ A bare invocation asks, in order:
 | ------------------------------------------- | ------------------------------------------------------------------------------ |
 | What would you like to do?                  | Start a `strict`, `open` or no-network session — or prune unused cache volumes |
 | Which coding agent should run this task?    | Claude Code                                                                    |
+| Which model should the agent use?           | _Only with `--prompt`_ — the `agents.jsonc` model, or the agent's own default  |
+| How much reasoning effort should it use?    | _Only with `--prompt`_ — the model’s `efforts` from `agents.jsonc`             |
 | Main Git repository path                    | The repository containing the current directory                                |
 | Task name                                   | _(required)_                                                                   |
 | Let the agent act without approval prompts? | Yes                                                                            |
 | Enable isolated Git history and commits?    | Yes                                                                            |
 
 The guided setup needs a terminal. Without one, use `--yes --task` and any other options instead.
+
+`--prompt` makes the agent start working the moment it opens, leaving no chance to switch models first — so the model and effort questions appear only then, and only for whichever of `--model`/`--effort` was left off. With `models` configured in `agents.jsonc` they are pickers over those entries; otherwise the model is free text. Either can be left as the agent default.
 
 ## What a session does
 
@@ -60,36 +64,36 @@ portable configs directory                                  -> /coding-agent-san
 
 ## CLI options
 
-| Option                    | Description                                                                                   |
-| ------------------------- | --------------------------------------------------------------------------------------------- |
-| `--agent <agent>`         | `claude`, `codex` or `copilot`                                                                |
-| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                         |
-| `--task <name>`           | Task name; drives the branch and worktree names                                               |
-| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules   |
-| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                                  |
-| `--worktree <path>`       | Override the worktree location                                                                |
-| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                          |
-| `--image <tag>`           | Use an existing image instead of building the bundled one                                     |
-| `--prompt <text>`         | Initial prompt passed safely to the selected agent                                            |
-| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`. Accepts a `<model>:<effort>` shorthand  |
-| `--effort <level>`        | Reasoning effort (`minimal`\|`low`\|`medium`\|`high`\|`xhigh`); ignored by agents without one |
-| `--agent-args <args>`     | Trusted shell text appended to the agent command                                              |
-| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                                      |
-| `--no-install`            | Skip project dependency installation                                                          |
-| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                                       |
-| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                                 |
-| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                              |
-| `--rebuild-image`         | Rebuild the shared development image                                                          |
-| `--login`                 | Force the agent login flow before launching                                                   |
-| `--dry-run`               | Preview Docker arguments with environment values omitted                                      |
-| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                           |
-| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                    |
-| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                               |
-| `--memory <size>`         | Limit container memory (unconstrained by default)                                             |
-| `--pids-limit <count>`    | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)               |
-| `--offline`               | Deprecated alias for `--network none`                                                         |
-| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset                       |
-| `--list-agents`           | List the supported agents and exit                                                            |
+| Option                    | Description                                                                                  |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| `--agent <agent>`         | `claude`, `codex` or `copilot`                                                               |
+| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                        |
+| `--task <name>`           | Task name; drives the branch and worktree names                                              |
+| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules  |
+| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                                 |
+| `--worktree <path>`       | Override the worktree location                                                               |
+| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                         |
+| `--image <tag>`           | Use an existing image instead of building the bundled one                                    |
+| `--prompt <text>`         | Initial prompt passed safely to the selected agent                                           |
+| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`. Accepts a `<model>:<effort>` shorthand |
+| `--effort <level>`        | Reasoning effort, e.g. `low`/`high`/`xhigh`/`max`; the levels are agent-specific             |
+| `--agent-args <args>`     | Trusted shell text appended to the agent command                                             |
+| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                                     |
+| `--no-install`            | Skip project dependency installation                                                         |
+| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                                      |
+| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                                |
+| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                             |
+| `--rebuild-image`         | Rebuild the shared development image                                                         |
+| `--login`                 | Force the agent login flow before launching                                                  |
+| `--dry-run`               | Preview Docker arguments with environment values omitted                                     |
+| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                          |
+| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                   |
+| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                              |
+| `--memory <size>`         | Limit container memory (unconstrained by default)                                            |
+| `--pids-limit <count>`    | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)              |
+| `--offline`               | Deprecated alias for `--network none`                                                        |
+| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset                      |
+| `--list-agents`           | List the supported agents and exit                                                           |
 
 ### Examples
 
@@ -165,15 +169,23 @@ An optional `agents.jsonc` (or `agents.json`) in `--configs-dir` sets per-agent 
 }
 ```
 
-Precedence is `--model`/`--effort` > the agent’s own entry > `$defaults`. Model names are agent-specific and passed through unvalidated; `effort` is normalized here and mapped onto whichever setting the agent CLI actually exposes.
+Precedence is `--model`/`--effort` > the agent’s own entry > `$defaults`. Model names are agent-specific and passed through unvalidated; `effort` is lower-cased and checked for shape only, then mapped onto whichever setting the agent CLI actually exposes.
 
 `models` is an optional list for integrations (such as a model picker); it does not affect launch selection. Each entry is either a bare name or an object with `name` plus optional `label`, `efforts` (the levels to offer with it) and `effort` (the level to preselect).
 
 ### Reasoning effort
 
-`--effort` and the `<model>:<effort>` shorthand are two spellings of one setting; the explicit flag wins. The suffix is only read as an effort when it matches a known level, so names that legitimately contain `:` or `/` — `vendor/model:latest`, `anthropic/claude-sonnet-4.5` — pass through untouched.
+Every CLI names its own levels and adds to them between releases, so a level is a free-form token passed through like a model name — anything the agent accepts works. Each agent gets it in its own spelling:
 
-Only Codex maps it today (to `-c model_reasoning_effort=<level>`). Claude Code and Copilot CLI have no equivalent flag, so the session warns and ignores it rather than failing.
+| Agent          | Mapped to                           |
+| -------------- | ----------------------------------- |
+| Claude Code    | `--effort <level>`                  |
+| GitHub Copilot | `--effort <level>`                  |
+| OpenAI Codex   | `-c model_reasoning_effort=<level>` |
+
+An agent with no such setting warns and ignores the value rather than failing.
+
+`--effort` and the `<model>:<effort>` shorthand are two spellings of one setting; the explicit flag wins. The shorthand splits only on `minimal`, `low`, `medium`, `high`, `xhigh`, `max` and `ultra`, so names that legitimately contain `:` or `/` — `vendor/model:latest`, `anthropic/claude-sonnet-4.5` — pass through untouched. Any other level still works through `--effort` or `agents.jsonc`.
 
 ## Authentication
 

@@ -1,5 +1,6 @@
 import type { AgentAuthConfig, AgentLaunchOptions } from '../types';
-import { AgentAdapter } from './agent-adapter';
+import type { ReasoningEffort } from './reasoning-effort';
+import { AgentAdapter, quoteShellArgument } from './agent-adapter';
 
 /** Anthropic Claude Code. */
 export class ClaudeAgent extends AgentAdapter {
@@ -29,6 +30,11 @@ export class ClaudeAgent extends AgentAdapter {
       ['claude', options.fullAccess ? '--dangerously-skip-permissions' : undefined],
       options,
     );
+  }
+
+  // Claude Code takes the level directly; see `claude --help`.
+  override effortArgs(effort: ReasoningEffort): string {
+    return `--effort ${quoteShellArgument(effort)}`;
   }
 
   // The config synchronizer writes shared skills to ~/.agents/skills.
