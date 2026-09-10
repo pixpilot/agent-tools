@@ -1,5 +1,19 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.10.0
+
+### Minor Changes
+
+- streamline initial prompt handling
+- support schema metadata and model choices
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @pixpilot/agent-config-sync@0.8.0
+
 ## 1.9.0
 
 ### Minor Changes
