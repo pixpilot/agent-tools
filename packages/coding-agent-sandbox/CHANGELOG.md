@@ -1,5 +1,16 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.12.0
+
+### Minor Changes
+
+- add model reasoning effort options
+
+### Patch Changes
+
+- Updated dependencies
+  - @pixpilot/agent-config-sync@0.10.0
+
 ## 1.11.0
 
 ### Minor Changes
