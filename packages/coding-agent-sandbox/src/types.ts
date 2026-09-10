@@ -79,6 +79,12 @@ export interface SandboxOptions {
   configsDir?: string | undefined;
   branch?: string | undefined;
   worktree?: string | undefined;
+  /**
+   * Root for the temporary directories bind-mounted into the container.
+   * Docker Desktop grants bind mounts per path, so a fixed root can be shared
+   * once instead of approving a freshly named directory on every run.
+   */
+  tempDir?: string | undefined;
   base?: string | undefined;
   image?: string | undefined;
   /** Initial user message passed safely to the selected coding agent. */

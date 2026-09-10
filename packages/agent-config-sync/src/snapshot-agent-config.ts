@@ -17,10 +17,15 @@ export function createAgentConfigSnapshot(
     platform?: NodeJS.Platform;
     /** Temporary directory name prefix, so a caller can name itself as the owner. */
     directoryPrefix?: string;
+    /** Directory the snapshot is created under; the OS temporary directory by default. */
+    directoryRoot?: string;
   } = {},
 ): ConfigSnapshot {
   const root = fs.mkdtempSync(
-    path.join(os.tmpdir(), options.directoryPrefix ?? 'agent-config-sync-'),
+    path.join(
+      options.directoryRoot ?? os.tmpdir(),
+      options.directoryPrefix ?? 'agent-config-sync-',
+    ),
   );
   try {
     const paths = getAgentConfigPaths(agent, options);

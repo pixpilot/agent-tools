@@ -72,6 +72,7 @@ portable configs directory                                  -> /coding-agent-san
 | `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules  |
 | `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                                 |
 | `--worktree <path>`       | Override the worktree location                                                               |
+| `--temp-dir <path>`       | Root for the temporary directories bind-mounted into the container (default: the OS temp directory) |
 | `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                         |
 | `--image <tag>`           | Use an existing image instead of building the bundled one                                    |
 | `--prompt <text>`         | Initial prompt passed safely to the selected agent                                           |
@@ -134,6 +135,18 @@ npx @pixpilot/coding-agent-sandbox --agent claude --task "fix resume generation"
 ### Multi-line prompts on Windows
 
 When launched with `npx` on Windows, `cmd.exe` truncates a multi-line `--prompt` before this CLI receives it. Put the prompt in a UTF-8 file and pass `--prompt-file <path>` instead; its trailing whitespace is removed, and the file is only read — never moved or deleted. Relative paths resolve from the current directory.
+
+### Docker Desktop file-sharing prompts on Windows
+
+Each session creates temporary directories for its private Git metadata and its config snapshot, and both are bind-mounted into the container. Their names carry the owning process id, so the path is new on every run — and on the Hyper-V backend Docker Desktop asks to share each new path, once per session. Declining fails the run with `user declined directory sharing`.
+
+Pass `--temp-dir <path>` to place them all under a directory you control:
+
+```powershell
+npx @pixpilot/coding-agent-sandbox --task "fix resume generation" --temp-dir C:docker-sharessandbox --yes
+```
+
+Share that one directory in **Settings → Resources → File sharing** and the prompts stop, without granting Docker your whole temp directory. The directory is created when missing; the per-session directories inside it are still removed when the session ends.
 
 ## Worktrees and branches
 

@@ -9,7 +9,9 @@ export {
   keepTempDirectory,
   removeStaleTempDirectories,
   removeTempDirectory,
+  setTempDirectoryRoot,
   setTerminalHandoff,
   tempDirectoryPrefix,
+  tempDirectoryRoot,
   trackTempDirectory,
 } from './temp-directories';

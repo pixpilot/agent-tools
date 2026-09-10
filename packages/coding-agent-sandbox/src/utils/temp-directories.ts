@@ -12,6 +12,7 @@ import {
   TEMP_DIRECTORY_KEEP_MARKER,
   TEMP_DIRECTORY_PREFIX,
 } from '../constants';
+import { pathsEqual } from './normalize-path';
 
 const SIGNAL_EXIT_CODES: Partial<Record<NodeJS.Signals, number>> = {
   SIGINT: 130,
@@ -26,8 +27,42 @@ const LEGACY_PREFIXES = ['agent-config-sync-', TEMP_DIRECTORY_PREFIX];
 const ONE_DAY_MS = 86_400_000;
 
 const tracked = new Set<string>();
+let configuredRoot: string | undefined;
 let installed = false;
 let terminalHandoff = false;
+
+/** Root every temporary directory of this session is created under. */
+export function tempDirectoryRoot(): string {
+  return configuredRoot ?? os.tmpdir();
+}
+
+/**
+ * Points temporary directories at `requested`, creating it when missing. Every
+ * directory this CLI creates is bind-mounted into the container, and Docker
+ * Desktop grants bind mounts per path: a fixed root can be shared once instead
+ * of approving a freshly named directory on every run. Returns whether the root
+ * actually moved away from the OS temporary directory.
+ */
+export function setTempDirectoryRoot(requested: string | undefined): boolean {
+  const trimmed = requested?.trim();
+
+  if (trimmed == null || trimmed === '') {
+    configuredRoot = undefined;
+    return false;
+  }
+
+  const resolved = path.resolve(trimmed);
+
+  try {
+    fs.mkdirSync(resolved, { recursive: true });
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    throw new Error(`Could not create --temp-dir ${resolved}: ${message}`);
+  }
+
+  configuredRoot = resolved;
+  return !pathsEqual(resolved, os.tmpdir());
+}
 
 /** Names a temporary directory after this package and the session that owns it. */
 export function tempDirectoryPrefix(purpose: string): string {
@@ -37,7 +72,9 @@ export function tempDirectoryPrefix(purpose: string): string {
 /** Creates a temporary directory that is removed when this session ends. */
 export function createTempDirectory(purpose: string): string {
   installTempDirectoryCleanup();
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), tempDirectoryPrefix(purpose)));
+  const directory = fs.mkdtempSync(
+    path.join(tempDirectoryRoot(), tempDirectoryPrefix(purpose)),
+  );
   tracked.add(directory);
   return directory;
 }
@@ -94,7 +131,7 @@ function createSignalHandler(signal: NodeJS.Signals): () => void {
 
 /** Removes leftovers from earlier sessions whose process is no longer running. */
 export function removeStaleTempDirectories(): void {
-  const root = os.tmpdir();
+  const root = tempDirectoryRoot();
   let entries: fs.Dirent[];
 
   try {

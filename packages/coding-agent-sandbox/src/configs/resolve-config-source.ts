@@ -10,6 +10,7 @@ import { detail } from '../utils/logger';
 import {
   removeTempDirectory,
   tempDirectoryPrefix,
+  tempDirectoryRoot,
   trackTempDirectory,
 } from '../utils/temp-directories';
 
@@ -55,6 +56,7 @@ export function resolveConfigSource(
 function snapshotAgentConfig(agent: AgentId): ConfigSnapshot {
   const snapshot = createAgentConfigSnapshot(agent, {
     directoryPrefix: tempDirectoryPrefix('configs'),
+    directoryRoot: tempDirectoryRoot(),
   });
   trackTempDirectory(snapshot.path);
   return { ...snapshot, cleanup: () => removeTempDirectory(snapshot.path) };

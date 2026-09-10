@@ -14,6 +14,7 @@ import {
 vi.mock('../../src/utils/temp-directories', () => ({
   removeTempDirectory: vi.fn(),
   tempDirectoryPrefix: (purpose: string) => `coding-agent-sandbox-${purpose}-1234-`,
+  tempDirectoryRoot: () => '/sandbox-temp',
   trackTempDirectory: vi.fn(),
 }));
 vi.mock('@pixpilot/agent-config-sync', () => ({
@@ -43,6 +44,7 @@ describe('resolveConfigSource', () => {
     });
     expect(createAgentConfigSnapshot).toHaveBeenCalledWith('codex', {
       directoryPrefix: 'coding-agent-sandbox-configs-1234-',
+      directoryRoot: '/sandbox-temp',
     });
   });
 

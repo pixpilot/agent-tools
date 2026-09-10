@@ -23,6 +23,7 @@ import { error, plain } from './utils/logger';
 import {
   installTempDirectoryCleanup,
   removeStaleTempDirectories,
+  setTempDirectoryRoot,
 } from './utils/temp-directories';
 
 const AGENT_ID_COLUMN_WIDTH = 10;
@@ -65,6 +66,12 @@ async function main(): Promise<void> {
       plain(`${agent.id.padEnd(AGENT_ID_COLUMN_WIDTH)}${agent.label}`);
     }
     return;
+  }
+
+  // A custom root is only known once the flags are parsed, so its leftovers
+  // are swept here rather than with the OS temporary directory above.
+  if (setTempDirectoryRoot(raw.tempDir)) {
+    removeStaleTempDirectories();
   }
 
   let options: SandboxOptions;

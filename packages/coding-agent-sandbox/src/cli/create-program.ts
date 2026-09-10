@@ -29,6 +29,10 @@ export function createProgram(version: string): Command {
     )
     .option('--branch <name>', 'Override the ai/<agent>/<task> branch name')
     .option('--worktree <path>', 'Override the worktree location')
+    .option(
+      '--temp-dir <path>',
+      'Root for the temporary directories bind-mounted into the container (defaults to the OS temporary directory)',
+    )
     .option('--base <ref>', 'Base ref for a newly created branch')
     .option('--image <tag>', 'Use an existing image instead of the bundled one')
     .option('--prompt <text>', 'Initial prompt passed safely to the agent')
