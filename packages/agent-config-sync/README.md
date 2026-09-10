@@ -16,7 +16,7 @@ configs/
 JSON/JSONC object keyed by server name; `$defaults.startupTimeoutSec` applies
 one startup limit to every server:
 
-```jsonc
+```json
 {
   "$schema": "https://unpkg.com/@pixpilot/agent-config-sync/schemas/mcp.schema.json",
   "$defaults": {
