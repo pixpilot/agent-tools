@@ -115,7 +115,10 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
 
     const preview = previewWorktree(repository, plan);
     if (!options.dryRun && preview.created) {
-      await ensureWorktreeSourceIsClean(repository.root, { nonInteractive: options.yes });
+      await ensureWorktreeSourceIsClean(repository.root, {
+        nonInteractive: options.yes,
+        allowDirty: options.allowDirty,
+      });
     }
 
     step(`Preparing worktree for ${agent.label}`);

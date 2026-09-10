@@ -37,6 +37,7 @@ function makeOptions(overrides: Partial<SandboxOptions> = {}): SandboxOptions {
     rebuildImage: false,
     login: false,
     dryRun: false,
+    allowDirty: false,
     yes: false,
     network: 'strict',
     ...overrides,

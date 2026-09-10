@@ -73,6 +73,10 @@ export function createProgram(version: string): Command {
     .option('--login', 'Force the agent login flow before launching')
     .option('--dry-run', 'Print the docker run command without starting anything')
     .option(
+      '--allow-dirty',
+      'Create the worktree from committed HEAD even when the main checkout has uncommitted changes',
+    )
+    .option(
       '-y, --yes',
       'Never prompt; skip the guided setup and use defaults for anything unset',
     )

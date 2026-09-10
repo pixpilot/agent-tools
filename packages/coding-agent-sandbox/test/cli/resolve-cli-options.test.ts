@@ -24,6 +24,7 @@ describe('resolveCliOptions', () => {
       rebuildImage: false,
       login: false,
       dryRun: false,
+      allowDirty: false,
       network: 'strict',
       yes: false,
     });

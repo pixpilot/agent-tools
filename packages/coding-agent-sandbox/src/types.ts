@@ -107,6 +107,11 @@ export interface SandboxOptions {
   memory?: string | undefined;
   /** `docker run --pids-limit` value; a hardened default applies when unset. */
   pidsLimit?: string | undefined;
+  /**
+   * Create the worktree from committed HEAD even when the main checkout has
+   * uncommitted changes. Those changes are never copied into the worktree.
+   */
+  allowDirty: boolean;
   yes: boolean;
 }
 

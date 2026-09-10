@@ -86,6 +86,7 @@ portable configs directory                                  -> /coding-agent-san
 | `--rebuild-image`         | Rebuild the shared development image                                                         |
 | `--login`                 | Force the agent login flow before launching                                                  |
 | `--dry-run`               | Preview Docker arguments with environment values omitted                                     |
+| `--allow-dirty`           | Create the worktree from committed HEAD even when the main checkout is dirty                 |
 | `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                          |
 | `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                   |
 | `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                              |
@@ -134,6 +135,15 @@ npx @pixpilot/coding-agent-sandbox --agent claude --task "fix resume generation"
 | copilot | `ai/copilot/fix-resume-generation` | `<repo>.worktrees/fix-resume-generation-copilot` |
 
 If the worktree already exists it is **reused**, never recreated. Before reuse it is checked against `git worktree list` and its branch is verified. A directory that exists but is not a registered worktree of the repository aborts the run rather than being overwritten.
+
+### Uncommitted changes in the main checkout
+
+A new worktree is created from committed history, so uncommitted work in the main checkout is not part of the agent's workspace. When creating one the CLI lists those changes and stops so the omission is never silent:
+
+- Interactively, choose to re-check after committing or stashing, or bypass and continue from committed HEAD.
+- Non-interactively (`--yes`, or no TTY) the run fails. Commit or stash the changes, or pass `--allow-dirty` to accept the same bypass up front.
+
+`--allow-dirty` only waives the confirmation. It never copies, stashes or discards local changes — the main checkout is left untouched, and the worktree still starts from committed HEAD. Reusing an existing worktree skips the check entirely.
 
 ## Configuration provisioning
 

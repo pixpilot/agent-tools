@@ -2,12 +2,12 @@ import process from 'node:process';
 import { select } from '@inquirer/prompts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ensureWorktreeSourceIsClean } from '../../src/session/ensure-worktree-source-is-clean';
-import { plain } from '../../src/utils/logger';
+import { plain, warn } from '../../src/utils/logger';
 import { runOrThrow } from '../../src/utils/run-command';
 
 vi.mock('node:process', () => ({ default: { stdin: { isTTY: true } } }));
 vi.mock('@inquirer/prompts', () => ({ select: vi.fn() }));
-vi.mock('../../src/utils/logger', () => ({ plain: vi.fn() }));
+vi.mock('../../src/utils/logger', () => ({ plain: vi.fn(), warn: vi.fn() }));
 vi.mock('../../src/utils/run-command', () => ({ runOrThrow: vi.fn() }));
 
 beforeEach(() => {
@@ -64,5 +64,37 @@ describe('ensureWorktreeSourceIsClean', () => {
       ensureWorktreeSourceIsClean('/repository', { nonInteractive: true }),
     ).rejects.toThrow(/Refusing/u);
     expect(select).not.toHaveBeenCalled();
+  });
+
+  it('should point at --allow-dirty when it fails closed', async () => {
+    vi.mocked(runOrThrow).mockReturnValue(' M local.ts');
+
+    await expect(
+      ensureWorktreeSourceIsClean('/repository', { nonInteractive: true }),
+    ).rejects.toThrow(/--allow-dirty/u);
+  });
+
+  it('should continue from committed HEAD when --allow-dirty is passed', async () => {
+    vi.mocked(runOrThrow).mockReturnValue(' M local.ts');
+
+    await expect(
+      ensureWorktreeSourceIsClean('/repository', {
+        nonInteractive: true,
+        allowDirty: true,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(plain).toHaveBeenCalledWith(expect.stringContaining(' M local.ts'));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('--allow-dirty'));
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it('should not bypass the check for a clean checkout', async () => {
+    vi.mocked(runOrThrow).mockReturnValue('');
+
+    await ensureWorktreeSourceIsClean('/repository', { allowDirty: true });
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(plain).not.toHaveBeenCalled();
   });
 });
