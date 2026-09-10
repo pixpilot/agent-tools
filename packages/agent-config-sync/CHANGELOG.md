@@ -1,5 +1,11 @@
 # @pixpilot/agent-config-sync
 
+## 0.10.0
+
+### Minor Changes
+
+- add model reasoning effort options
+
 ## 0.9.0
 
 ### Minor Changes
