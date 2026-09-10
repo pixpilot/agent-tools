@@ -1,5 +1,16 @@
 # @pixpilot/agent-config-sync
 
+## 0.8.0
+
+### Minor Changes
+
+- streamline initial prompt handling
+- support schema metadata and model choices
+
+### Patch Changes
+
+- correct JSON formatting in mcp.jsonc example
+
 ## 0.7.0
 
 ### Minor Changes
