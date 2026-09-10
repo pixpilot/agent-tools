@@ -64,39 +64,39 @@ portable configs directory                                  -> /coding-agent-san
 
 ## CLI options
 
-| Option                    | Description                                                                                  |
-| ------------------------- | -------------------------------------------------------------------------------------------- |
-| `--agent <agent>`         | `claude`, `codex` or `copilot`                                                               |
-| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                        |
-| `--task <name>`           | Task name; drives the branch and worktree names                                              |
-| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules  |
-| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                                 |
-| `--worktree <path>`       | Override the worktree location                                                               |
+| Option                    | Description                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| `--agent <agent>`         | `claude`, `codex` or `copilot`                                                                      |
+| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                               |
+| `--task <name>`           | Task name; drives the branch and worktree names                                                     |
+| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules         |
+| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                                        |
+| `--worktree <path>`       | Override the worktree location                                                                      |
 | `--temp-dir <path>`       | Root for the temporary directories bind-mounted into the container (default: the OS temp directory) |
-| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                         |
-| `--image <tag>`           | Use an existing image instead of building the bundled one                                    |
-| `--prompt <text>`         | Initial prompt passed safely to the selected agent                                           |
-| `--prompt-file <path>`    | Read the initial prompt from a UTF-8 file; cannot be combined with `--prompt`                |
-| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`. Accepts a `<model>:<effort>` shorthand |
-| `--effort <level>`        | Reasoning effort, e.g. `low`/`high`/`xhigh`/`max`; the levels are agent-specific             |
-| `--agent-args <args>`     | Trusted shell text appended to the agent command                                             |
-| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                                     |
-| `--no-install`            | Skip project dependency installation                                                         |
-| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                                      |
-| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                                |
-| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                             |
-| `--rebuild-image`         | Rebuild the shared development image                                                         |
-| `--login`                 | Force the agent login flow before launching                                                  |
-| `--dry-run`               | Preview Docker arguments with environment values omitted                                     |
-| `--allow-dirty`           | Create the worktree from committed HEAD even when the main checkout is dirty                 |
-| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                          |
-| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                   |
-| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                              |
-| `--memory <size>`         | Limit container memory (unconstrained by default)                                            |
-| `--pids-limit <count>`    | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)              |
-| `--offline`               | Deprecated alias for `--network none`                                                        |
-| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset                      |
-| `--list-agents`           | List the supported agents and exit                                                           |
+| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                                |
+| `--image <tag>`           | Use an existing image instead of building the bundled one                                           |
+| `--prompt <text>`         | Initial prompt passed safely to the selected agent                                                  |
+| `--prompt-file <path>`    | Read the initial prompt from a UTF-8 file; cannot be combined with `--prompt`                       |
+| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`. Accepts a `<model>:<effort>` shorthand        |
+| `--effort <level>`        | Reasoning effort, e.g. `low`/`high`/`xhigh`/`max`; the levels are agent-specific                    |
+| `--agent-args <args>`     | Trusted shell text appended to the agent command                                                    |
+| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                                            |
+| `--no-install`            | Skip project dependency installation                                                                |
+| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                                             |
+| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                                       |
+| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                                    |
+| `--rebuild-image`         | Rebuild the shared development image                                                                |
+| `--login`                 | Force the agent login flow before launching                                                         |
+| `--dry-run`               | Preview Docker arguments with environment values omitted                                            |
+| `--allow-dirty`           | Create the worktree from committed HEAD even when the main checkout is dirty                        |
+| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                                 |
+| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                          |
+| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                                     |
+| `--memory <size>`         | Limit container memory (unconstrained by default)                                                   |
+| `--pids-limit <count>`    | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)                     |
+| `--offline`               | Deprecated alias for `--network none`                                                               |
+| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset                             |
+| `--list-agents`           | List the supported agents and exit                                                                  |
 
 ### Examples
 
