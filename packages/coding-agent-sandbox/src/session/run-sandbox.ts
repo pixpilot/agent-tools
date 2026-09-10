@@ -4,6 +4,7 @@ import type { ConfigSourceInfo, SandboxOptions, SessionPlan } from '../types';
 import { existsSync } from 'node:fs';
 import process from 'node:process';
 import { getAgent } from '../agents/agent-registry';
+import { parseModelSpec } from '../agents/parse-model-spec';
 import { readAgentSettings } from '../configs/read-agent-settings';
 import { resolveConfigSource } from '../configs/resolve-config-source';
 import { ensureDocker } from '../docker/ensure-docker';
@@ -80,12 +81,22 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
         })
       : { path: repository.root, available: [] };
 
-  // `agents.jsonc` only supplies a default; an explicit `--model` always wins.
+  // `agents.jsonc` only supplies defaults; explicit flags always win. `--model`
+  // may carry its own `:<effort>`, which an explicit `--effort` still overrides.
+  const settings = readAgentSettings(options.configsDir, agent.id as AgentId);
+  const requested = parseModelSpec(options.model);
+  const effort = options.effort ?? requested.effort ?? settings.effort;
   const session: SandboxOptions = {
     ...options,
-    model:
-      options.model ?? readAgentSettings(options.configsDir, agent.id as AgentId).model,
+    model: requested.model ?? settings.model,
+    effort,
   };
+
+  if (effort != null && agent.effortArgs(effort) == null) {
+    warn(
+      `${agent.label} has no reasoning-effort setting: --effort ${effort} is ignored.`,
+    );
+  }
 
   try {
     if (offline) {

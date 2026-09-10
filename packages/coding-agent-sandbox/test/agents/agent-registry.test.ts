@@ -106,6 +106,35 @@ describe('agent launch commands', () => {
     );
   });
 
+  it('should map the reasoning effort onto the agent that supports one', () => {
+    expect(getAgent('codex').launchCommand({ fullAccess: false, effort: 'high' })).toBe(
+      "codex -c 'model_reasoning_effort=high'",
+    );
+  });
+
+  it('should drop the reasoning effort for agents without an equivalent flag', () => {
+    for (const agent of [getAgent('claude'), getAgent('copilot')]) {
+      expect(agent.effortArgs('high')).toBeUndefined();
+      expect(agent.launchCommand({ fullAccess: false, effort: 'high' })).toBe(
+        agent.binary,
+      );
+    }
+  });
+
+  it('should place the effort between the model and extra arguments', () => {
+    expect(
+      getAgent('codex').launchCommand({
+        fullAccess: false,
+        model: 'gpt-5.1-codex-max',
+        effort: 'xhigh',
+        extraArgs: '--search',
+        prompt: 'ship it',
+      }),
+    ).toBe(
+      "codex --model 'gpt-5.1-codex-max' -c 'model_reasoning_effort=xhigh' --search 'ship it'",
+    );
+  });
+
   it('should ignore blank extra arguments', () => {
     expect(getAgent('claude').launchCommand({ fullAccess: false, extraArgs: '  ' })).toBe(
       'claude',

@@ -29,21 +29,68 @@
       "type": "object",
       "properties": {
         "model": {
-          "description": "Model name passed directly to the selected agent CLI.",
+          "description": "Model name passed directly to the selected agent CLI. A recognized \":<effort>\" suffix sets \"effort\" instead of becoming part of the name.",
           "type": "string",
           "pattern": "\\S"
         },
+        "effort": {
+          "description": "Default reasoning effort. Ignored by agents whose CLI has no equivalent flag.",
+          "$ref": "#/$defs/effort"
+        },
         "models": {
-          "description": "Model names offered by integrations such as a model picker.",
+          "description": "Models offered by integrations such as a model picker, one entry per model.",
           "type": "array",
           "items": {
-            "type": "string",
-            "pattern": "\\S"
+            "$ref": "#/$defs/modelChoice"
           },
           "uniqueItems": true
         }
       },
       "additionalProperties": false
+    },
+    "modelChoice": {
+      "description": "A selectable model: either a bare name, or a name with per-model options.",
+      "anyOf": [
+        {
+          "description": "Shorthand for an entry with no options beyond its name.",
+          "type": "string",
+          "pattern": "\\S"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Model name passed directly to the selected agent CLI.",
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "label": {
+              "description": "Display name shown by a picker instead of the raw model name.",
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "efforts": {
+              "description": "Reasoning efforts this model may be run with, offered alongside it by a picker.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/effort"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "effort": {
+              "description": "Reasoning effort selected with this model by default.",
+              "$ref": "#/$defs/effort"
+            }
+          },
+          "required": ["name"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "effort": {
+      "description": "How much reasoning the model should spend before answering.",
+      "enum": ["minimal", "low", "medium", "high", "xhigh"]
     }
   }
 }

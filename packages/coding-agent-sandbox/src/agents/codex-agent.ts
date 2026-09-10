@@ -1,5 +1,6 @@
 import type { AgentAuthConfig, AgentLaunchOptions } from '../types';
-import { AgentAdapter } from './agent-adapter';
+import type { ReasoningEffort } from './reasoning-effort';
+import { AgentAdapter, quoteShellArgument } from './agent-adapter';
 
 /** OpenAI Codex CLI. */
 export class CodexAgent extends AgentAdapter {
@@ -26,6 +27,11 @@ export class CodexAgent extends AgentAdapter {
       ],
       options,
     );
+  }
+
+  // Codex has no effort flag; it takes the setting as a config override.
+  override effortArgs(effort: ReasoningEffort): string {
+    return `-c ${quoteShellArgument(`model_reasoning_effort=${effort}`)}`;
   }
 
   // Codex reads ~/.codex/AGENTS.md, which the config synchronizer writes directly.

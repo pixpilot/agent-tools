@@ -60,35 +60,36 @@ portable configs directory                                  -> /coding-agent-san
 
 ## CLI options
 
-| Option                    | Description                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------- |
-| `--agent <agent>`         | `claude`, `codex` or `copilot`                                                              |
-| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                       |
-| `--task <name>`           | Task name; drives the branch and worktree names                                             |
-| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules |
-| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                                |
-| `--worktree <path>`       | Override the worktree location                                                              |
-| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                        |
-| `--image <tag>`           | Use an existing image instead of building the bundled one                                   |
-| `--prompt <text>`         | Initial prompt passed safely to the selected agent                                          |
-| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`                                        |
-| `--agent-args <args>`     | Trusted shell text appended to the agent command                                            |
-| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                                    |
-| `--no-install`            | Skip project dependency installation                                                        |
-| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                                     |
-| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                               |
-| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                            |
-| `--rebuild-image`         | Rebuild the shared development image                                                        |
-| `--login`                 | Force the agent login flow before launching                                                 |
-| `--dry-run`               | Preview Docker arguments with environment values omitted                                    |
-| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                         |
-| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                  |
-| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                             |
-| `--memory <size>`         | Limit container memory (unconstrained by default)                                           |
-| `--pids-limit <count>`    | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)             |
-| `--offline`               | Deprecated alias for `--network none`                                                       |
-| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset                     |
-| `--list-agents`           | List the supported agents and exit                                                          |
+| Option                    | Description                                                                                   |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| `--agent <agent>`         | `claude`, `codex` or `copilot`                                                                |
+| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                         |
+| `--task <name>`           | Task name; drives the branch and worktree names                                               |
+| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules   |
+| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                                  |
+| `--worktree <path>`       | Override the worktree location                                                                |
+| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                          |
+| `--image <tag>`           | Use an existing image instead of building the bundled one                                     |
+| `--prompt <text>`         | Initial prompt passed safely to the selected agent                                            |
+| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`. Accepts a `<model>:<effort>` shorthand  |
+| `--effort <level>`        | Reasoning effort (`minimal`\|`low`\|`medium`\|`high`\|`xhigh`); ignored by agents without one |
+| `--agent-args <args>`     | Trusted shell text appended to the agent command                                              |
+| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                                      |
+| `--no-install`            | Skip project dependency installation                                                          |
+| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                                       |
+| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                                 |
+| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                              |
+| `--rebuild-image`         | Rebuild the shared development image                                                          |
+| `--login`                 | Force the agent login flow before launching                                                   |
+| `--dry-run`               | Preview Docker arguments with environment values omitted                                      |
+| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                           |
+| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                    |
+| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                               |
+| `--memory <size>`         | Limit container memory (unconstrained by default)                                             |
+| `--pids-limit <count>`    | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)               |
+| `--offline`               | Deprecated alias for `--network none`                                                         |
+| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset                       |
+| `--list-agents`           | List the supported agents and exit                                                            |
 
 ### Examples
 
@@ -111,6 +112,10 @@ npx @pixpilot/coding-agent-sandbox --agent claude --task "risky refactor" \
 
 # Pick the model for this session
 npx @pixpilot/coding-agent-sandbox --agent codex --task "fix login" --model gpt-5.1-codex
+
+# Pick the model and how hard it should think (equivalently: --model gpt-5.1-codex-max:high)
+npx @pixpilot/coding-agent-sandbox --agent codex --task "fix login" \
+  --model gpt-5.1-codex-max --effort high
 
 # See exactly what would run, without creating a worktree or a container
 npx @pixpilot/coding-agent-sandbox --agent claude --task "fix resume generation" --dry-run --yes
@@ -145,13 +150,30 @@ An optional `agents.jsonc` (or `agents.json`) in `--configs-dir` sets per-agent 
   "$defaults": { "model": "gpt-5.1-codex" },
   "claude": { "model": "opus" },
   "codex": {
-    "model": "gpt-5.1-codex",
-    "models": ["gpt-5.1-codex", "gpt-5.1-codex-mini"],
+    "model": "gpt-5.1-codex-max",
+    "effort": "high",
+    "models": [
+      "gpt-5.1-codex-mini",
+      {
+        "name": "gpt-5.1-codex-max",
+        "label": "Codex Max",
+        "efforts": ["low", "medium", "high", "xhigh"],
+        "effort": "high",
+      },
+    ],
   },
 }
 ```
 
-Precedence is `--model` > the agent’s own entry > `$defaults`. `models` is an optional list for integrations (such as a model picker); it does not affect launch selection. Model names are agent-specific and passed through unvalidated.
+Precedence is `--model`/`--effort` > the agent’s own entry > `$defaults`. Model names are agent-specific and passed through unvalidated; `effort` is normalized here and mapped onto whichever setting the agent CLI actually exposes.
+
+`models` is an optional list for integrations (such as a model picker); it does not affect launch selection. Each entry is either a bare name or an object with `name` plus optional `label`, `efforts` (the levels to offer with it) and `effort` (the level to preselect).
+
+### Reasoning effort
+
+`--effort` and the `<model>:<effort>` shorthand are two spellings of one setting; the explicit flag wins. The suffix is only read as an effort when it matches a known level, so names that legitimately contain `:` or `/` — `vendor/model:latest`, `anthropic/claude-sonnet-4.5` — pass through untouched.
+
+Only Codex maps it today (to `-c model_reasoning_effort=<level>`). Claude Code and Copilot CLI have no equivalent flag, so the session warns and ignores it rather than failing.
 
 ## Authentication
 

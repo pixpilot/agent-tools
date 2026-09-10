@@ -1,4 +1,5 @@
 import type { AgentAuthConfig, AgentLaunchOptions } from '../types';
+import type { ReasoningEffort } from './reasoning-effort';
 
 /**
  * Contract every coding agent implements. Adding an agent means adding one
@@ -36,6 +37,15 @@ export abstract class AgentAdapter {
     return '';
   }
 
+  /**
+   * Flags that select the reasoning effort, or `undefined` when this agent's
+   * CLI has no equivalent. Unlike `--model`, effort is spelled differently by
+   * every CLI, so it cannot be passed straight through.
+   */
+  effortArgs(_effort: ReasoningEffort): string | undefined {
+    return undefined;
+  }
+
   /** Docker volume holding this agent's credentials and settings. */
   get authVolume(): string {
     return `coding-agent-sandbox-auth-${this.id}`;
@@ -49,7 +59,7 @@ export abstract class AgentAdapter {
   /** Joins the base command with trusted flags and a safely quoted initial prompt. */
   protected buildCommand(
     parts: Array<string | undefined>,
-    { extraArgs, model, prompt }: AgentLaunchOptions,
+    { effort, extraArgs, model, prompt }: AgentLaunchOptions,
   ): string {
     const initialPrompt = prompt?.trim();
     const selectedModel = model?.trim();
@@ -61,6 +71,8 @@ export abstract class AgentAdapter {
       selectedModel == null || selectedModel === ''
         ? undefined
         : `--model ${quoteShellArgument(selectedModel)}`,
+      // Silently dropped when the agent has no effort flag; `runSandbox` warns.
+      effort == null ? undefined : this.effortArgs(effort),
       extraArgs,
       // The prompt is positional, so one starting with `-` is parsed as an
       // unknown flag; `--` ends option parsing before it is read.
@@ -74,6 +86,7 @@ export abstract class AgentAdapter {
   }
 }
 
-function quoteShellArgument(value: string): string {
+/** Wraps a value in single quotes so the container shell treats it as one literal argument. */
+export function quoteShellArgument(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
 }

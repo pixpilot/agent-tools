@@ -1,15 +1,21 @@
 /**
  * Public API of `@pixpilot/coding-agent-sandbox`.
  */
+export type { ModelSpec, ReasoningEffort } from './agents/index';
 export {
   AgentAdapter,
   ClaudeAgent,
   CodexAgent,
   CopilotAgent,
   getAgent,
+  isReasoningEffort,
   listAgents,
+  parseModelSpec,
+  parseReasoningEffort,
+  REASONING_EFFORTS,
 } from './agents/index';
-export { resolveConfigSource } from './configs/index';
+export type { AgentSettings, ModelChoice } from './configs/index';
+export { readAgentSettings, resolveConfigSource } from './configs/index';
 export * from './constants';
 export {
   buildRunArgs,

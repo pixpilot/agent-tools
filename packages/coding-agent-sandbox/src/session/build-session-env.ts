@@ -46,6 +46,7 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
       fullAccess: options.fullAccess,
       prompt: options.prompt,
       model: options.model,
+      effort: options.effort,
       extraArgs: options.agentArgs,
     }),
     SANDBOX_STATE_ROOT: CONTAINER_STATE_ROOT,

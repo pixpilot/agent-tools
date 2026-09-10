@@ -1,6 +1,7 @@
 /**
  * Types shared across the sandbox CLI.
  */
+import type { ReasoningEffort } from './agents/reasoning-effort';
 import type { NetworkMode } from './network/network-mode';
 
 /** How an agent proves it is signed in, and how to sign it in when it is not. */
@@ -21,6 +22,8 @@ export interface AgentLaunchOptions {
   prompt?: string | undefined;
   /** Model the agent should use; the name is agent-specific and unvalidated. */
   model?: string | undefined;
+  /** Reasoning effort; ignored by agents whose CLI has no equivalent flag. */
+  effort?: ReasoningEffort | undefined;
   /** Trusted shell text appended to the agent command; never accept untrusted input. */
   extraArgs?: string | undefined;
 }
@@ -84,6 +87,8 @@ export interface SandboxOptions {
   agentArgs?: string | undefined;
   /** Model passed to the agent, overriding any `agents.jsonc` default. */
   model?: string | undefined;
+  /** Reasoning effort, overriding any `agents.jsonc` default. */
+  effort?: ReasoningEffort | undefined;
   fullAccess: boolean;
   install: boolean;
   configs: boolean;
