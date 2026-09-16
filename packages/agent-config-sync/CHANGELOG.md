@@ -1,5 +1,11 @@
 # @pixpilot/agent-config-sync
 
+## 0.12.0
+
+### Minor Changes
+
+- add support for custom temporary directory root
+
 ## 0.11.0
 
 ### Minor Changes
