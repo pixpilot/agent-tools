@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.15.1
+
+### Patch Changes
+
+- remove hardcoded prompt from agent:start script
+
 ## 1.15.0
 
 ### Minor Changes
