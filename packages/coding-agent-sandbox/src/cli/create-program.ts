@@ -63,6 +63,10 @@ export function createProgram(version: string): Command {
       '--allow-hosts <host...>',
       'Extra hosts to allow in strict mode, e.g. cdn.playwright.dev',
     )
+    .option(
+      '--allow-provider-mcp',
+      "Let the agent use its vendor's hosted MCP connector gateway (off in every network mode; rejected with --network none)",
+    )
     .option('--cpus <count>', 'Limit container CPUs (unconstrained by default)')
     .option('--memory <size>', 'Limit container memory (unconstrained by default)')
     .option(

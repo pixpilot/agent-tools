@@ -12,6 +12,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { listAgents } from './agents/agent-registry';
+import { PROVIDER_MCP_NOTICE } from './agents/provider-mcp';
 import { createProgram } from './cli/create-program';
 import { getExplicitOptions, hasExplicitOptions } from './cli/has-explicit-options';
 import { resolveCliOptions } from './cli/resolve-cli-options';
@@ -19,7 +20,7 @@ import { runWizard } from './cli/run-wizard';
 import { EXIT_CODE_ERROR } from './constants';
 import { pruneVolumes } from './docker/prune-volumes';
 import { runSandbox } from './session/run-sandbox';
-import { error, plain } from './utils/logger';
+import { detail, error, plain } from './utils/logger';
 import {
   installTempDirectoryCleanup,
   removeStaleTempDirectories,
@@ -85,7 +86,15 @@ async function main(): Promise<void> {
       );
     }
 
-    const result = await runWizard(getExplicitOptions(program));
+    const explicit = getExplicitOptions(program);
+
+    // Stated before the first question, so the guided setup never silently
+    // starts a session with a capability the user expected to have.
+    if (explicit.allowProviderMcp !== true) {
+      detail(PROVIDER_MCP_NOTICE);
+    }
+
+    const result = await runWizard(explicit);
 
     if (result.action === 'prune') {
       await pruneVolumes();

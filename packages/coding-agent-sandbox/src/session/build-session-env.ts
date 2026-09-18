@@ -43,6 +43,7 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
     SANDBOX_AGENT_INSTALL: agent.installCommand,
     SANDBOX_AGENT_UPDATE: options.updateAgent ? '1' : '0',
     SANDBOX_AGENT_CMD: agent.launchCommand({
+      allowProviderMcp: options.allowProviderMcp,
       fullAccess: options.fullAccess,
       prompt: options.prompt,
       model: options.model,
@@ -61,6 +62,9 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
     SANDBOX_POST_SYNC_CMD: agent.postSyncCommand(),
     SANDBOX_TASK: worktree.taskSlug,
     SANDBOX_BRANCH: worktree.branch,
+    // Written in both states: leaving it out would let the agent's own default
+    // decide whether its vendor gateway is used.
+    ...agent.providerMcpState(options.allowProviderMcp).env,
   };
 
   if (agent.auth.loginCommand != null) {

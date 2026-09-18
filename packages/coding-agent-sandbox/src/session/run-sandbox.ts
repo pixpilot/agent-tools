@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import process from 'node:process';
 import { getAgent } from '../agents/agent-registry';
 import { parseModelSpec } from '../agents/parse-model-spec';
+import { describeProviderMcp, PROVIDER_MCP_FLAG } from '../agents/provider-mcp';
 import { readAgentSettings } from '../configs/read-agent-settings';
 import { resolveConfigSource } from '../configs/resolve-config-source';
 import { PROMPT_WARN_CHARS } from '../constants';
@@ -60,6 +61,20 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     throw new Error(
       '--network none cannot be combined with --login, --update-agent or --rebuild-image.',
     );
+  }
+
+  // A provider gateway is a remote service, so the flag cannot mean anything
+  // without a network; failing is clearer than accepting it and ignoring it.
+  if (offline && options.allowProviderMcp === true) {
+    throw new Error(
+      `${PROVIDER_MCP_FLAG} cannot be combined with --network none: the gateway is reached over the network.`,
+    );
+  }
+
+  const providerMcp = describeProviderMcp(agent, options.allowProviderMcp);
+
+  if (providerMcp != null && !offline) {
+    detail(providerMcp);
   }
 
   if (!options.dryRun) {
@@ -172,6 +187,7 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
       agent,
       environment,
       extraHosts: [...getRemoteHosts(repository.root), ...(options.allowHosts ?? [])],
+      allowProviderMcp: options.allowProviderMcp,
     });
 
     const sessionPlan: SessionPlan = {

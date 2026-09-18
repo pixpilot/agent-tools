@@ -1,4 +1,4 @@
-import type { AgentAuthConfig, AgentLaunchOptions } from '../types';
+import type { AgentAuthConfig, AgentLaunchOptions, ProviderMcpConfig } from '../types';
 import type { ReasoningEffort } from './reasoning-effort';
 import { AgentAdapter, quoteShellArgument } from './agent-adapter';
 
@@ -16,6 +16,16 @@ export class ClaudeAgent extends AgentAdapter {
     'claude.ai',
     'statsig.anthropic.com',
   ];
+
+  // claude.ai connectors reach an account's mail, drive and calendar, so they
+  // stay off unless the session asks for them; the gateway host is allowlisted
+  // only then. See `--allow-provider-mcp`.
+  override readonly providerMcp: ProviderMcpConfig = {
+    label: 'claude.ai MCP connectors',
+    hosts: ['mcp-proxy.anthropic.com'],
+    allowed: { env: { ENABLE_CLAUDEAI_MCP_SERVERS: 'true' } },
+    blocked: { env: { ENABLE_CLAUDEAI_MCP_SERVERS: 'false' } },
+  };
 
   override readonly stateDirs = ['.claude'];
   override readonly stateFiles = ['.claude.json'];

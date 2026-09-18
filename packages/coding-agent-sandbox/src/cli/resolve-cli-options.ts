@@ -48,6 +48,7 @@ export function resolveCliOptions(raw: RawCliOptions): SandboxOptions {
     login: raw.login ?? false,
     dryRun: raw.dryRun ?? false,
     allowDirty: raw.allowDirty ?? false,
+    allowProviderMcp: raw.allowProviderMcp ?? false,
     network: resolveNetworkMode(raw),
     yes: raw.yes ?? false,
   };

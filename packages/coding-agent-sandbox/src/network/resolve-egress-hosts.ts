@@ -9,6 +9,11 @@ export interface EgressHostSources {
   environment?: EnvironmentAdapter | undefined;
   /** The repository's own Git remotes, plus anything `--allow-hosts` added. */
   extraHosts?: readonly string[] | undefined;
+  /**
+   * Adds the agent's provider MCP gateway. Off by default, so the gateway host
+   * is absent from the allowlist unless the session asked for it.
+   */
+  allowProviderMcp?: boolean | undefined;
 }
 
 /**
@@ -20,10 +25,12 @@ export function resolveEgressHosts({
   agent,
   environment,
   extraHosts,
+  allowProviderMcp,
 }: EgressHostSources): string[] {
   const hosts = [
     ...BOOTSTRAP_EGRESS_HOSTS,
     ...agent.egressHosts,
+    ...(allowProviderMcp === true ? (agent.providerMcp?.hosts ?? []) : []),
     ...(environment?.egressHosts ?? []),
     ...(extraHosts ?? []),
   ].map((host) => host.trim().toLowerCase());

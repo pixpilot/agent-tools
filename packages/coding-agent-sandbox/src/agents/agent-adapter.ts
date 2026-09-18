@@ -1,4 +1,9 @@
-import type { AgentAuthConfig, AgentLaunchOptions } from '../types';
+import type {
+  AgentAuthConfig,
+  AgentLaunchOptions,
+  ProviderMcpConfig,
+  ProviderMcpState,
+} from '../types';
 import type { ReasoningEffort } from './reasoning-effort';
 
 /**
@@ -23,6 +28,13 @@ export abstract class AgentAdapter {
    * so verify these in `open` mode against a fresh, unauthenticated volume.
    */
   readonly egressHosts: readonly string[] = [];
+
+  /**
+   * The vendor's own hosted MCP connector gateway, when this agent has one.
+   * Agents without one leave it undefined and `--allow-provider-mcp` has no
+   * effect on them.
+   */
+  readonly providerMcp?: ProviderMcpConfig | undefined;
 
   /** Home-relative directories persisted in the agent's Docker auth volume. */
   readonly stateDirs: readonly string[] = [];
@@ -61,16 +73,27 @@ export abstract class AgentAdapter {
     return this.id;
   }
 
+  /** How this agent behaves under the session's provider-MCP setting. */
+  providerMcpState(allowed: boolean | undefined): ProviderMcpState {
+    if (this.providerMcp == null) {
+      return {};
+    }
+
+    return allowed === true ? this.providerMcp.allowed : this.providerMcp.blocked;
+  }
+
   /** Joins the base command with trusted flags and a safely quoted initial prompt. */
   protected buildCommand(
     parts: Array<string | undefined>,
-    { effort, extraArgs, model, prompt }: AgentLaunchOptions,
+    { allowProviderMcp, effort, extraArgs, model, prompt }: AgentLaunchOptions,
   ): string {
     const initialPrompt = prompt?.trim();
     const selectedModel = model?.trim();
 
     return [
       ...parts,
+      // Agents whose CLI takes a flag rather than an environment variable.
+      this.providerMcpState(allowProviderMcp).arg,
       // Every supported CLI spells this the same way; the name itself is
       // agent-specific and passed through untouched.
       selectedModel == null || selectedModel === ''

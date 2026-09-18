@@ -14,6 +14,36 @@ export interface AgentAuthConfig {
   hint: string;
 }
 
+/**
+ * What an agent does in one provider-MCP state. Vendors differ in how their CLI
+ * is told: some read an environment variable, others take a launch flag.
+ */
+export interface ProviderMcpState {
+  /** Container environment applied in this state. */
+  env?: Readonly<Record<string, string>> | undefined;
+  /** Trusted flag appended to the agent's launch command in this state. */
+  arg?: string | undefined;
+}
+
+/**
+ * A provider-hosted MCP gateway: the vendor's own connector service, reached
+ * over the network and switched on by the vendor rather than by the user.
+ * `--allow-provider-mcp` is the single switch for every agent that has one.
+ */
+export interface ProviderMcpConfig {
+  /** How the vendor names the feature; used in the session notice. */
+  label: string;
+  /** Gateway hosts the feature needs on the `strict` allowlist. */
+  hosts: readonly string[];
+  /** Applied when the session allows provider MCP. */
+  allowed: ProviderMcpState;
+  /**
+   * Applied otherwise. Stated explicitly rather than left empty, so a vendor
+   * that turns the feature on by default cannot quietly re-enable it here.
+   */
+  blocked: ProviderMcpState;
+}
+
 /** Inputs used to build the agent's interactive launch command. */
 export interface AgentLaunchOptions {
   /** Grant the agent unattended tool/permission access inside the sandbox. */
@@ -26,6 +56,8 @@ export interface AgentLaunchOptions {
   effort?: ReasoningEffort | undefined;
   /** Trusted shell text appended to the agent command; never accept untrusted input. */
   extraArgs?: string | undefined;
+  /** Let the agent use its vendor's hosted MCP connector gateway. */
+  allowProviderMcp?: boolean | undefined;
 }
 
 /** Resolved details of the main Git repository the session is based on. */
@@ -107,6 +139,13 @@ export interface SandboxOptions {
   network: NetworkMode;
   /** Extra hosts allowed in `strict`, on top of the resolved allowlist. */
   allowHosts?: readonly string[] | undefined;
+  /**
+   * Let the selected agent reach its vendor's hosted MCP connector gateway.
+   * Off in every network mode, including `open`: the gateway carries an
+   * account's connected services into the sandbox, which a coding session does
+   * not need. Rejected with `none`, which has no network to reach it over.
+   */
+  allowProviderMcp?: boolean | undefined;
   /** `docker run --cpus` value; unconstrained when unset. */
   cpus?: string | undefined;
   /** `docker run --memory` value; unconstrained when unset. */

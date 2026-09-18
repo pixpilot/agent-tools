@@ -25,9 +25,24 @@ describe('resolveCliOptions', () => {
       login: false,
       dryRun: false,
       allowDirty: false,
+      allowProviderMcp: false,
       network: 'strict',
       yes: false,
     });
+  });
+
+  it('should keep the provider MCP gateway off unless it was asked for', () => {
+    expect(resolveCliOptions({ task: 'fix login' }).allowProviderMcp).toBe(false);
+    expect(
+      resolveCliOptions({ task: 'fix login', allowProviderMcp: true }).allowProviderMcp,
+    ).toBe(true);
+  });
+
+  // `open` widens the proxy allowlist, never the agent's own feature switches.
+  it('should not enable the provider MCP gateway for an open network', () => {
+    expect(
+      resolveCliOptions({ task: 'fix login', network: 'open' }).allowProviderMcp,
+    ).toBe(false);
   });
 
   it('should keep explicitly provided values', () => {

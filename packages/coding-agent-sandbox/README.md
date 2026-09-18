@@ -91,6 +91,7 @@ portable configs directory                                  -> /coding-agent-san
 | `--allow-dirty`           | Create the worktree from committed HEAD even when the main checkout is dirty                        |
 | `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                                 |
 | `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                          |
+| `--allow-provider-mcp`    | Let the agent use its vendor's hosted MCP connector gateway (off by default; rejected with `none`)  |
 | `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                                     |
 | `--memory <size>`         | Limit container memory (unconstrained by default)                                                   |
 | `--pids-limit <count>`    | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)                     |
@@ -302,6 +303,7 @@ the proxy environment and are subject to the same allowlist:
 | stdio server that only touches the workspace | works; it needs no network                          |
 | stdio server that calls a third-party API    | needs that API's host via `--allow-hosts`           |
 | remote HTTP/SSE server                       | needs its host via `--allow-hosts`                  |
+| the vendor's own connector gateway           | off unless you pass `--allow-provider-mcp`          |
 | a server that downloads a browser or binary  | needs its CDN via `--allow-hosts`                   |
 
 Node-based servers do reach allowlisted hosts, including through `fetch`, because
@@ -311,6 +313,40 @@ agent's `WebFetch` work at all.
 
 Use `--network open` for research tasks, then read the printed hostnames to
 decide what deserves a permanent entry.
+
+### Provider-hosted MCP connectors
+
+Some agent CLIs reach their vendor's own connector gateway: a hosted service
+that brings the signed-in account's connected apps — mail, drive, calendar,
+issue trackers — into the session as MCP tools. It is switched on by the vendor,
+not by your configuration, so it is off here in **every** network mode:
+
+| Agent              | Gateway                                                  |
+| ------------------ | -------------------------------------------------------- |
+| Claude Code        | claude.ai connectors, through `mcp-proxy.anthropic.com`  |
+| OpenAI Codex       | none; remote MCP servers are configured per server       |
+| GitHub Copilot CLI | none switchable; its built-in servers share the API host |
+
+`--allow-provider-mcp` turns it on for one session, and in `strict` mode also
+allowlists the gateway host:
+
+```sh
+csbx --task "triage inbox issues" --allow-provider-mcp
+```
+
+`--network open` does **not** enable it. Opening the network widens the proxy
+allowlist; it never flips an agent's own feature switches, so the gateway stays
+off until you ask for it. `--network none` rejects the flag outright, since
+there is no network to reach a hosted gateway over.
+
+The switch is written on every run rather than left unset, so an agent that
+enables its gateway by default cannot quietly turn it back on. Sessions print
+which state they are in before the first prompt. Agents configured without a
+gateway ignore the flag.
+
+Your own MCP servers are unaffected: a stdio server runs in the container, and a
+remote server you configured yourself connects to its own host — neither goes
+through a vendor gateway.
 
 TLS is never intercepted. In `strict` mode the proxy requires the TLS ClientHello
 SNI to match the allowed `CONNECT` hostname before it opens the upstream socket,
@@ -407,6 +443,16 @@ export class CursorAgent extends AgentAdapter {
   readonly binary = 'cursor-agent';
   readonly installCommand = 'npm install -g cursor-agent@latest';
   override readonly stateDirs = ['.cursor'];
+
+  // Optional: a vendor-hosted connector gateway, covered by --allow-provider-mcp.
+  // State both halves - the blocked half is what stops the vendor's own default
+  // from applying - and set either container environment (env) or a flag (arg).
+  override readonly providerMcp = {
+    label: 'Cursor connectors',
+    hosts: ['connectors.cursor.example'],
+    allowed: { env: { CURSOR_CONNECTORS: '1' } },
+    blocked: { env: { CURSOR_CONNECTORS: '0' } },
+  };
 
   readonly auth = {
     probe: 'test -s "$HOME/.cursor/auth.json"',

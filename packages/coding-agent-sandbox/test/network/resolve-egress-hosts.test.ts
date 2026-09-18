@@ -79,6 +79,32 @@ describe('resolveEgressHosts', () => {
     expect(hosts.length).toBeGreaterThan(0);
   });
 
+  // The gateway is a separate capability from the provider API, so it stays off
+  // the allowlist until the session asks for it.
+  it('should leave the provider MCP gateway off the allowlist by default', () => {
+    const hosts = resolveEgressHosts({ agent: new ClaudeAgent() });
+
+    expect(hosts).not.toContain('mcp-proxy.anthropic.com');
+  });
+
+  it('should allow the provider MCP gateway once the session opts in', () => {
+    const hosts = resolveEgressHosts({
+      agent: new ClaudeAgent(),
+      allowProviderMcp: true,
+    });
+
+    expect(hosts).toContain('mcp-proxy.anthropic.com');
+    expect(hosts).toContain('api.anthropic.com');
+  });
+
+  it('should add nothing for an agent without a provider MCP gateway', () => {
+    const agent = new CodexAgent();
+
+    expect(resolveEgressHosts({ agent, allowProviderMcp: true })).toStrictEqual(
+      resolveEgressHosts({ agent }),
+    );
+  });
+
   it('should reject an invalid user-supplied host before starting the proxy', () => {
     expect(() =>
       resolveEgressHosts({

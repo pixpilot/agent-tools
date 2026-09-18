@@ -56,6 +56,22 @@ function build(overrides: Partial<SandboxOptions> = {}, agentId = 'claude') {
 }
 
 describe('buildSessionEnv', () => {
+  // Written in both states: omitting it would hand the decision back to the
+  // agent's own default, which enables the gateway for claude.ai accounts.
+  it('should switch the provider MCP gateway off by default', () => {
+    expect(build()['ENABLE_CLAUDEAI_MCP_SERVERS']).toBe('false');
+  });
+
+  it('should switch the provider MCP gateway on when the session allows it', () => {
+    expect(build({ allowProviderMcp: true })['ENABLE_CLAUDEAI_MCP_SERVERS']).toBe('true');
+  });
+
+  it('should not set a gateway variable for an agent without one', () => {
+    expect(build({ allowProviderMcp: true }, 'codex')).not.toHaveProperty(
+      'ENABLE_CLAUDEAI_MCP_SERVERS',
+    );
+  });
+
   it('should disable configuration and dependency installation offline', () => {
     const env = build({ network: 'none' });
     expect(env['SANDBOX_OFFLINE']).toBe('1');

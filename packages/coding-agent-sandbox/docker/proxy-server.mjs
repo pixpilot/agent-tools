@@ -27,6 +27,11 @@ const server = http.createServer((request, response) => {
 });
 
 server.on('connect', (request, client, head) => {
+  // Nothing else listens on a raw CONNECT socket, so a client that resets the
+  // tunnel - as one does the moment it is refused mid-handshake - would raise
+  // an unhandled 'error' event and take the whole proxy down with it.
+  client.on('error', () => client.destroy());
+
   proxyConnect(request, client, head).catch((error) => {
     log(
       'REJECTED',
@@ -38,7 +43,11 @@ server.on('connect', (request, client, head) => {
 });
 
 server.on('clientError', (_error, socket) => {
-  socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+  socket.on('error', () => socket.destroy());
+
+  if (socket.writable) {
+    socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+  }
 });
 
 server.listen(PORT, '0.0.0.0', () => {
@@ -144,8 +153,10 @@ function tunnel(client, address, port, buffered) {
     client.pipe(upstream);
     upstream.pipe(client);
   });
-  upstream.once('error', () => client.destroy());
-  client.once('error', () => upstream.destroy());
+  // `on`, not `once`: either half can error again while the other is being
+  // torn down, and a second error must still find a listener.
+  upstream.on('error', () => client.destroy());
+  client.on('error', () => upstream.destroy());
   client.once('close', () => upstream.destroy());
 }
 
