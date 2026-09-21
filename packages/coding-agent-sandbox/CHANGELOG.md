@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.16.0
+
+### Minor Changes
+
+- add support for vendor-hosted MCP connectors
+
 ## 1.15.1
 
 ### Patch Changes
