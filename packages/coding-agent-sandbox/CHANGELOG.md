@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.17.0
+
+### Minor Changes
+
+- implement discovery and handling of npm registry tokens
+
 ## 1.16.0
 
 ### Minor Changes
