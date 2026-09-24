@@ -21,6 +21,15 @@ export abstract class EnvironmentAdapter {
   readonly egressHosts: readonly string[] = [];
 
   /**
+   * Extra `strict` hosts named by the project's own configuration, such as a
+   * private registry. Read from a host-owned checkout, never the worktree, so
+   * an agent cannot widen a later session's allowlist by editing a file.
+   */
+  projectEgressHosts(_projectPath: string): readonly string[] {
+    return [];
+  }
+
+  /**
    * Container paths kept in named volumes instead of the host worktree, so
    * dependency trees are neither written to Windows nor reinstalled each run.
    */

@@ -13,6 +13,15 @@ STATE_ROOT="${SANDBOX_STATE_ROOT:-/agent-state}"
 AGENT_LABEL="${SANDBOX_AGENT_LABEL:-coding agent}"
 SRC="${SANDBOX_CONFIGS_SRC:-/coding-agent-sandbox/configs}"
 
+# Registry tokens from --npm-auth arrive as ordinary variables. Stop exporting
+# them at once so only the dependency install in step 4 can see them.
+npm_auth_vars=()
+while IFS='=' read -r _registry var; do
+  [ -n "${var:-}" ] || continue
+  npm_auth_vars+=("$var")
+  export -n "$var"
+done <<<"${SANDBOX_NPM_AUTH:-}"
+
 # The bind-mounted worktree belongs to the host user, not to `node`.
 git config --global --add safe.directory /workspace >/dev/null 2>&1 || true
 # Keep Git's index stable when Docker Desktop exposes a Windows CRLF checkout.
@@ -113,8 +122,29 @@ if [ "${SANDBOX_OFFLINE:-0}" != "1" ] && [ -n "${SANDBOX_DEPS_INSTALL:-}" ]; the
     esac
   fi
   step "Installing project dependencies (${SANDBOX_ENV_LABEL:-project})"
-  eval "$SANDBOX_DEPS_INSTALL" || warn "Dependency installation failed - continuing anyway"
+  (
+    if [ "${#npm_auth_vars[@]}" -gt 0 ]; then
+      # npm, pnpm and Yarn Classic expand `${VAR}` in this user config, so the
+      # file never holds a token; the existing user config is carried over.
+      userconfig="$(mktemp)" || exit 1
+      trap 'rm -f "$userconfig"' EXIT
+      {
+        [ -f "$HOME/.npmrc" ] && cat "$HOME/.npmrc"
+        while IFS='=' read -r registry var; do
+          # shellcheck disable=SC2016 # the package manager expands it, not bash
+          printf '//%s/:_authToken=${%s}\n' "$registry" "$var"
+        done <<<"$SANDBOX_NPM_AUTH"
+      } >"$userconfig"
+      export NPM_CONFIG_USERCONFIG="$userconfig" "${npm_auth_vars[@]}"
+    fi
+    eval "$SANDBOX_DEPS_INSTALL"
+  ) || warn "Dependency installation failed - continuing anyway"
 fi
+
+# Nothing after the install - login, and the agent itself - gets a token.
+for var in "${npm_auth_vars[@]}"; do
+  unset "$var"
+done
 
 # --- 5. Authentication -------------------------------------------------------
 authenticated() {

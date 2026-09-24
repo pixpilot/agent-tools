@@ -1,4 +1,5 @@
 import type { AgentId } from '@pixpilot/agent-config-sync';
+import type { NpmRegistryAuth } from '../environments/parse-npm-auth';
 import type { ProxyAudit } from '../network/extract-proxy-hosts';
 import type { ConfigSourceInfo, SandboxOptions, SessionPlan } from '../types';
 import { existsSync } from 'node:fs';
@@ -22,6 +23,9 @@ import {
 } from '../docker/remove-session-network';
 import { runContainer } from '../docker/run-container';
 import { detectEnvironment } from '../environments/detect-environment';
+import { discoverNpmAuth } from '../environments/discover-npm-auth';
+import { withDownloadHosts } from '../environments/npm-registry-hosts';
+import { findMissingNpmTokens, parseNpmAuthList } from '../environments/parse-npm-auth';
 import { ensureWorktree } from '../git/ensure-worktree';
 import { getRemoteHosts } from '../git/get-remote-hosts';
 import {
@@ -39,7 +43,7 @@ import { resolveEgressHosts } from '../network/resolve-egress-hosts';
 import { sessionNetworkNames } from '../network/session-network-names';
 import { detail, step, success, warn } from '../utils/logger';
 import { buildContainerName } from './build-container-name';
-import { buildSessionEnv } from './build-session-env';
+import { buildSessionEnv, installsDependencies } from './build-session-env';
 import { buildSessionVolumes } from './build-session-volumes';
 import { composePrompt } from './compose-prompt';
 import { ensureNoActiveContainer } from './ensure-no-active-container';
@@ -71,6 +75,10 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
     );
   }
 
+  // Checked before any side effect, so a malformed entry or a missing token
+  // never leaves a worktree behind.
+  const explicitNpmAuth = parseNpmAuthList(options.npmAuth);
+  ensureNpmTokens(explicitNpmAuth, options);
   const providerMcp = describeProviderMcp(agent, options.allowProviderMcp);
 
   if (providerMcp != null && !offline) {
@@ -84,6 +92,13 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   step('Validating the Git repository');
   const repository = resolveRepository(options.repo);
   detail(`${repository.root} (base ref: ${repository.headRef})`);
+
+  // Registries come from the main checkout for the same reason as the allowlist.
+  const requestedNpmAuth = withDiscoveredNpmAuth(
+    explicitNpmAuth,
+    repository.root,
+    options,
+  );
 
   const plan = resolveWorktreePlan(repository, agent, options.task, {
     branch: options.branch,
@@ -174,6 +189,11 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
       detail(`detected project environment: ${environment.label}`);
     }
 
+    const npmAuth = selectNpmAuth(
+      requestedNpmAuth,
+      installsDependencies(environment, options),
+    );
+
     const containerName = buildContainerName(agent.id, worktree.taskSlug, worktree.path);
     const proxied = usesProxy(options.network);
     const names = sessionNetworkNames(containerName);
@@ -182,11 +202,17 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
         ? prepareSandboxGit(repository, worktree)
         : undefined;
     // The repository's own remotes must be reachable, or a session whose purpose
-    // is committing to that repository cannot fetch, pull or push.
+    // is committing to that repository cannot fetch, pull or push. Project
+    // registries come from the main checkout: the worktree is agent-writable.
     const egressHosts = resolveEgressHosts({
       agent,
       environment,
-      extraHosts: [...getRemoteHosts(repository.root), ...(options.allowHosts ?? [])],
+      extraHosts: [
+        ...getRemoteHosts(repository.root),
+        ...(environment?.projectEgressHosts(repository.root) ?? []),
+        ...npmAuth.flatMap(({ host }) => withDownloadHosts(host)),
+        ...(options.allowHosts ?? []),
+      ],
       allowProviderMcp: options.allowProviderMcp,
     });
 
@@ -216,9 +242,11 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
           worktree,
           configs,
           options: session,
+          npmAuth,
         }),
         ...(proxied ? buildProxyEnv(names.proxyUrl) : {}),
       },
+      hostEnv: npmAuth.map(({ envVar }) => envVar),
       tty: process.stdin.isTTY === true,
       network: options.network,
       networkName: proxied ? names.internal : undefined,
@@ -300,6 +328,85 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   } finally {
     configs.cleanup?.();
   }
+}
+
+/**
+ * A token `--npm-auth` names must be set on the host: failing here is clearer
+ * than a 401 buried in the install output. Skipped when nothing is installed.
+ */
+function ensureNpmTokens(
+  requested: readonly NpmRegistryAuth[],
+  options: SandboxOptions,
+): void {
+  const missing = findMissingNpmTokens(requested);
+
+  if (missing.length === 0 || !options.install || options.network === 'none') {
+    return;
+  }
+
+  const message = `--npm-auth needs ${missing.join(', ')} set in this environment.`;
+
+  if (!options.dryRun) {
+    throw new Error(message);
+  }
+  warn(message);
+}
+
+/**
+ * `--auto-npm-auth` adds the token variables the npmrc files name for the
+ * project's registries. An explicit `--npm-auth` for the same registry wins,
+ * and an unset variable only warns: nobody asked for that token by name.
+ */
+function withDiscoveredNpmAuth(
+  explicit: readonly NpmRegistryAuth[],
+  repositoryRoot: string,
+  options: SandboxOptions,
+): readonly NpmRegistryAuth[] {
+  if (options.autoNpmAuth !== true || !options.install || options.network === 'none') {
+    return explicit;
+  }
+
+  const named = new Set(explicit.map(({ host }) => host));
+  const { found, missing } = discoverNpmAuth(repositoryRoot);
+
+  for (const { host, envVar, source } of missing) {
+    if (!named.has(host)) {
+      warn(
+        `${envVar} (named in ${source}) is not set: ${host} installs without a token.`,
+      );
+    }
+  }
+
+  if (found.length === 0 && missing.length === 0) {
+    detail('--auto-npm-auth: no npmrc token variable matches the project registries.');
+  }
+
+  return [
+    ...explicit,
+    ...found
+      .filter(({ host }) => !named.has(host))
+      .map(({ host, envVar }) => ({ host, envVar })),
+  ];
+}
+
+/** The entries this session forwards; a token has no use without an install. */
+function selectNpmAuth(
+  requested: readonly NpmRegistryAuth[],
+  installing: boolean,
+): readonly NpmRegistryAuth[] {
+  if (requested.length === 0) {
+    return [];
+  }
+
+  if (!installing) {
+    warn('Registry auth is ignored: this session does not install dependencies.');
+    return [];
+  }
+
+  detail(
+    `registry auth: ${requested.map(({ host, envVar }) => `${host} (${envVar})`).join(', ')}`,
+  );
+  return requested;
 }
 
 async function pruneStaleVolumes(): Promise<void> {

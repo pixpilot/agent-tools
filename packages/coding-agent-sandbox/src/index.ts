@@ -29,11 +29,26 @@ export {
   resolveProxyImageTag,
   runContainer,
 } from './docker/index';
+export type {
+  DiscoveredNpmAuth,
+  DiscoverNpmAuthOptions,
+  NpmAuthDiscovery,
+  NpmRegistryAuth,
+} from './environments/index';
 export {
   detectEnvironment,
+  discoverNpmAuth,
   EnvironmentAdapter,
+  findMissingNpmTokens,
+  hostUserNpmrcPath,
   listEnvironments,
   NodeEnvironment,
+  parseNpmAuth,
+  parseNpmAuthList,
+  readNpmrcRegistries,
+  readNpmrcRegistryHosts,
+  readNpmrcTokenVars,
+  withDownloadHosts,
 } from './environments/index';
 export { ensureWorktree, resolveRepository, resolveWorktreePlan } from './git/index';
 export {

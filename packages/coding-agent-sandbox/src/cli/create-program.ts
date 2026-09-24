@@ -64,6 +64,14 @@ export function createProgram(version: string): Command {
       'Extra hosts to allow in strict mode, e.g. cdn.playwright.dev',
     )
     .option(
+      '--npm-auth <host=env...>',
+      'Registry token for the dependency install only, read from a host variable, e.g. npm.pkg.github.com=GH_PACKAGES_TOKEN',
+    )
+    .option(
+      '--auto-npm-auth',
+      'Derive --npm-auth for the registries in the project .npmrc from the env-variable token lines in it and in your ~/.npmrc (off by default)',
+    )
+    .option(
       '--allow-provider-mcp',
       "Let the agent use its vendor's hosted MCP connector gateway (off in every network mode; rejected with --network none)",
     )

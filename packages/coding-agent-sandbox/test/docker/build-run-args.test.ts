@@ -156,6 +156,19 @@ describe('buildRunArgs', () => {
     expect(args).toContain('B=two words');
   });
 
+  it('should forward host variables by name so their values stay out of argv', () => {
+    const args = buildRunArgs(makePlan({ hostEnv: ['GH_PACKAGES_TOKEN'] }));
+
+    expect(args[args.indexOf('GH_PACKAGES_TOKEN') - 1]).toBe('-e');
+    expect(args.some((arg) => arg.startsWith('GH_PACKAGES_TOKEN='))).toBe(false);
+  });
+
+  it('should reject a host variable the sandbox already sets', () => {
+    expect(() => buildRunArgs(makePlan({ hostEnv: ['SANDBOX_AGENT_ID'] }))).toThrow(
+      /SANDBOX_AGENT_ID is set by the sandbox/u,
+    );
+  });
+
   it('should end with the image so docker treats it as the run target', () => {
     expect(buildRunArgs(makePlan()).at(-1)).toBe('coding-agent-sandbox:test');
   });

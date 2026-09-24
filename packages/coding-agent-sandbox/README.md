@@ -64,40 +64,42 @@ portable configs directory                                  -> /coding-agent-san
 
 ## CLI options
 
-| Option                    | Description                                                                                         |
-| ------------------------- | --------------------------------------------------------------------------------------------------- |
-| `--agent <agent>`         | `claude`, `codex` or `copilot`                                                                      |
-| `--repo <path>`           | Main Git repository path (default: the repository containing the CWD)                               |
-| `--task <name>`           | Task name; drives the branch and worktree names                                                     |
-| `--configs-dir <path>`    | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules         |
-| `--branch <name>`         | Override the `ai/<agent>/<task>` branch name                                                        |
-| `--worktree <path>`       | Override the worktree location                                                                      |
-| `--temp-dir <path>`       | Root for the temporary directories bind-mounted into the container (default: the OS temp directory) |
-| `--base <ref>`            | Base ref for a newly created branch (default: the repository's HEAD)                                |
-| `--image <tag>`           | Use an existing image instead of building the bundled one                                           |
-| `--prompt <text>`         | Initial prompt passed safely to the selected agent                                                  |
-| `--prompt-file <path>`    | Read the initial prompt from a UTF-8 file; cannot be combined with `--prompt`                       |
-| `--model <name>`          | Model the agent should use; overrides `agents.jsonc`. Accepts a `<model>:<effort>` shorthand        |
-| `--effort <level>`        | Reasoning effort, e.g. `low`/`high`/`xhigh`/`max`; the levels are agent-specific                    |
-| `--agent-args <args>`     | Trusted shell text appended to the agent command                                                    |
-| `--full-access <boolean>` | Run the agent without approval prompts (default: `true`)                                            |
-| `--no-install`            | Skip project dependency installation                                                                |
-| `--no-configs`            | Skip skills, prompts, MCP and global-rules provisioning                                             |
-| `--no-git-mount`          | Disable isolated Git support (Git stops working in-container)                                       |
-| `--update-agent`          | Reinstall/upgrade the agent CLI in the container                                                    |
-| `--rebuild-image`         | Rebuild the shared development image                                                                |
-| `--login`                 | Force the agent login flow before launching                                                         |
-| `--dry-run`               | Preview Docker arguments with environment values omitted                                            |
-| `--allow-dirty`           | Create the worktree from committed HEAD even when the main checkout is dirty                        |
-| `--network <mode>`        | Egress policy: `strict` (default), `open` or `none`                                                 |
-| `--allow-hosts <host...>` | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                          |
-| `--allow-provider-mcp`    | Let the agent use its vendor's hosted MCP connector gateway (off by default; rejected with `none`)  |
-| `--cpus <count>`          | Limit container CPUs (unconstrained by default)                                                     |
-| `--memory <size>`         | Limit container memory (unconstrained by default)                                                   |
-| `--pids-limit <count>`    | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)                     |
-| `--offline`               | Deprecated alias for `--network none`                                                               |
-| `-y, --yes`               | Never prompt; skip the guided setup and use defaults for anything unset                             |
-| `--list-agents`           | List the supported agents and exit                                                                  |
+| Option                     | Description                                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `--agent <agent>`          | `claude`, `codex` or `copilot`                                                                            |
+| `--repo <path>`            | Main Git repository path (default: the repository containing the CWD)                                     |
+| `--task <name>`            | Task name; drives the branch and worktree names                                                           |
+| `--configs-dir <path>`     | Directory containing optional `skills/`, `prompts/`, `mcp.jsonc`, `agents.jsonc`, and rules               |
+| `--branch <name>`          | Override the `ai/<agent>/<task>` branch name                                                              |
+| `--worktree <path>`        | Override the worktree location                                                                            |
+| `--temp-dir <path>`        | Root for the temporary directories bind-mounted into the container (default: the OS temp directory)       |
+| `--base <ref>`             | Base ref for a newly created branch (default: the repository's HEAD)                                      |
+| `--image <tag>`            | Use an existing image instead of building the bundled one                                                 |
+| `--prompt <text>`          | Initial prompt passed safely to the selected agent                                                        |
+| `--prompt-file <path>`     | Read the initial prompt from a UTF-8 file; cannot be combined with `--prompt`                             |
+| `--model <name>`           | Model the agent should use; overrides `agents.jsonc`. Accepts a `<model>:<effort>` shorthand              |
+| `--effort <level>`         | Reasoning effort, e.g. `low`/`high`/`xhigh`/`max`; the levels are agent-specific                          |
+| `--agent-args <args>`      | Trusted shell text appended to the agent command                                                          |
+| `--full-access <boolean>`  | Run the agent without approval prompts (default: `true`)                                                  |
+| `--no-install`             | Skip project dependency installation                                                                      |
+| `--no-configs`             | Skip skills, prompts, MCP and global-rules provisioning                                                   |
+| `--no-git-mount`           | Disable isolated Git support (Git stops working in-container)                                             |
+| `--update-agent`           | Reinstall/upgrade the agent CLI in the container                                                          |
+| `--rebuild-image`          | Rebuild the shared development image                                                                      |
+| `--login`                  | Force the agent login flow before launching                                                               |
+| `--dry-run`                | Preview Docker arguments with environment values omitted                                                  |
+| `--allow-dirty`            | Create the worktree from committed HEAD even when the main checkout is dirty                              |
+| `--network <mode>`         | Egress policy: `strict` (default), `open` or `none`                                                       |
+| `--allow-hosts <host...>`  | Extra hosts allowed in `strict`, e.g. `cdn.playwright.dev`                                                |
+| `--npm-auth <host=env...>` | Registry token for the dependency install only, e.g. `npm.pkg.github.com=GH_PACKAGES_TOKEN`               |
+| `--auto-npm-auth`          | Derive `--npm-auth` from the `${VAR}` token lines in the project `.npmrc` and `~/.npmrc` (off by default) |
+| `--allow-provider-mcp`     | Let the agent use its vendor's hosted MCP connector gateway (off by default; rejected with `none`)        |
+| `--cpus <count>`           | Limit container CPUs (unconstrained by default)                                                           |
+| `--memory <size>`          | Limit container memory (unconstrained by default)                                                         |
+| `--pids-limit <count>`     | Limit container PIDs/threads (4096 by default; `--pids-limit=-1` for unlimited)                           |
+| `--offline`                | Deprecated alias for `--network none`                                                                     |
+| `-y, --yes`                | Never prompt; skip the guided setup and use defaults for anything unset                                   |
+| `--list-agents`            | List the supported agents and exit                                                                        |
 
 ### Examples
 
@@ -265,9 +267,9 @@ Docker host or `169.254.169.254` directly or through the proxy.
 
 `strict` is the default. The allowlist is composed from the selected agent's
 `egressHosts`, the detected environment's `egressHosts`, the npm registry the
-bootstrap itself needs, and **the hostnames of the repository's own HTTPS Git
-remotes**, so `fetch`, `pull` and `push` keep working. Add anything else for one
-session with `--allow-hosts`:
+bootstrap itself needs, the registries named in the project's `.npmrc`, and
+**the hostnames of the repository's own HTTPS Git remotes**, so `fetch`, `pull`
+and `push` keep working. Add anything else for one session with `--allow-hosts`:
 
 ```sh
 # a repo whose postinstall pulls prebuilt binaries, plus the GitHub API for gh
@@ -277,6 +279,53 @@ csbx --task fix-login --allow-hosts objects.githubusercontent.com api.github.com
 Every session prints the hostnames its proxy actually saw when it ends, in all
 modes — in `open` that audit trail is the whole point, and it is the intended way
 to discover what a repository needs.
+
+### Private registries
+
+Registries in the project's `.npmrc` (`registry=` and `@scope:registry=`) are
+allowed automatically, read from the main checkout rather than the
+agent-writable worktree. GitHub Packages also gets
+`pkg-npm.githubusercontent.com`, where it redirects tarball downloads.
+
+Host credentials are never mounted, so a registry that needs a token fails with
+a 401 until you name the host variable that holds it, or let the CLI find it:
+
+```sh
+# GH_PACKAGES_TOKEN is read from your environment
+csbx --task fix-billing --npm-auth npm.pkg.github.com=GH_PACKAGES_TOKEN
+
+# or derive that from the npmrc files on every run (off by default)
+csbx --task fix-billing --auto-npm-auth
+```
+
+With `--npm-auth`, an unset variable stops the session before a worktree is
+created.
+
+With `--auto-npm-auth`:
+
+- For each registry in the project's `.npmrc`, it looks for an auth line in that
+  file, then in your user config (`~/.npmrc`, or `NPM_CONFIG_USERCONFIG`).
+- Only lines of the form `//host/:_authToken=${VAR}` count. A token written into
+  the file is never read or forwarded.
+- Registries the project does not name get no token, even if your user config
+  has one.
+- An explicit `--npm-auth` for the same registry wins. An unset variable only
+  warns, and that registry installs without a token.
+
+In both cases:
+
+- Docker receives the variable by name only, so the value never appears in
+  `docker run` arguments or `--dry-run` output.
+- Only the dependency install can read it: the entrypoint stops exporting it at
+  start, writes a temporary user config containing
+  `//npm.pkg.github.com/:_authToken=${GH_PACKAGES_TOKEN}`, and unsets the variable
+  before login and the agent. The config holds the variable name, not the token.
+- A project `.npmrc` that already references `${GH_PACKAGES_TOKEN}` works as is.
+- Dependency install scripts run with the token, as they do on the host. Use a
+  token limited to reading packages.
+- The agent cannot fetch a private package that is not in the lockfile or store
+  yet. Rerun the session to install new ones.
+- Covers npm, pnpm and Yarn Classic. Yarn Berry reads `.yarnrc.yml` instead.
 
 ### What `strict` breaks
 
@@ -381,7 +430,7 @@ per core on top of that. Too low a ceiling surfaces as `EAGAIN` /
 or `pnpm`, not as an obvious limit error. Raise it with `--pids-limit` if a
 build still hits the ceiling.
 
-The CLI does not forward host API keys. Dry-run output omits all environment values, including agent commands. Never put secrets in `--agent-args`, repository URLs, paths or task names: arguments can appear in process listings or diagnostics. Terminal output uses inherited stdio and is **not sanitized**; an agent or subprocess may print sensitive data. Any future API-key mode must pass only the active agent's required variables without embedding their values in command arguments or logs.
+The CLI does not forward host API keys; the only host variables that reach the container are registry tokens from `--npm-auth` or `--auto-npm-auth`. Dry-run output omits all environment values, including agent commands. Never put secrets in `--agent-args`, repository URLs, paths or task names: arguments can appear in process listings or diagnostics. Terminal output uses inherited stdio and is **not sanitized**; an agent or subprocess may print sensitive data. Any future API-key mode must pass only the active agent's required variables without embedding their values in command arguments or logs.
 
 ## Removing unused caches
 

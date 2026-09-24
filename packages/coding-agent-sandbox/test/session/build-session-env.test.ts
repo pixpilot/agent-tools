@@ -3,7 +3,10 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { getAgent } from '../../src/agents/agent-registry';
 import { NodeEnvironment } from '../../src/environments/node-environment';
-import { buildSessionEnv } from '../../src/session/build-session-env';
+import {
+  buildSessionEnv,
+  installsDependencies,
+} from '../../src/session/build-session-env';
 
 const repository = {
   root: path.resolve('repo'),
@@ -95,6 +98,58 @@ describe('buildSessionEnv', () => {
 
   it('should disable configuration provisioning when asked', () => {
     expect(build({ configs: false })['SANDBOX_CONFIGS_ENABLED']).toBe('0');
+  });
+
+  describe('npm registry auth', () => {
+    const npmAuth = [
+      { host: 'npm.pkg.github.com', envVar: 'GH_PACKAGES_TOKEN' },
+      { host: 'npm.example.com', envVar: 'EXAMPLE_TOKEN' },
+    ];
+
+    function buildWithAuth(overrides: Partial<SandboxOptions> = {}) {
+      return buildSessionEnv({
+        agent: getAgent('claude'),
+        environment: new NodeEnvironment(),
+        repository,
+        worktree,
+        configs,
+        options: makeOptions(overrides),
+        npmAuth,
+      });
+    }
+
+    it('should name each registry and its variable, never the token', () => {
+      expect(buildWithAuth()['SANDBOX_NPM_AUTH']).toBe(
+        'npm.pkg.github.com=GH_PACKAGES_TOKEN\nnpm.example.com=EXAMPLE_TOKEN',
+      );
+    });
+
+    it.each([{ install: false }, { network: 'none' as const }])(
+      'should drop registry auth when nothing is installed (%o)',
+      (overrides) => {
+        expect(buildWithAuth(overrides)).not.toHaveProperty('SANDBOX_NPM_AUTH');
+      },
+    );
+
+    it('should omit registry auth when none was requested', () => {
+      expect(build()).not.toHaveProperty('SANDBOX_NPM_AUTH');
+    });
+  });
+
+  describe('installsDependencies', () => {
+    it('should install only with an environment, --install and a network', () => {
+      const node = new NodeEnvironment();
+
+      expect(installsDependencies(node, { install: true, network: 'strict' })).toBe(true);
+      expect(installsDependencies(node, { install: true, network: 'open' })).toBe(true);
+      expect(installsDependencies(node, { install: false, network: 'strict' })).toBe(
+        false,
+      );
+      expect(installsDependencies(node, { install: true, network: 'none' })).toBe(false);
+      expect(installsDependencies(undefined, { install: true, network: 'strict' })).toBe(
+        false,
+      );
+    });
   });
 
   it('should never leak host credentials or home paths into the container', () => {

@@ -1,5 +1,6 @@
 import type { AgentAdapter } from '../agents/agent-adapter';
 import type { EnvironmentAdapter } from '../environments/environment-adapter';
+import type { NpmRegistryAuth } from '../environments/parse-npm-auth';
 import type {
   ConfigSourceInfo,
   RepositoryInfo,
@@ -21,6 +22,16 @@ export interface SessionEnvInputs {
   worktree: WorktreeInfo;
   configs: ConfigSourceInfo;
   options: SandboxOptions;
+  /** Parsed `--npm-auth` entries; used only when dependencies are installed. */
+  npmAuth?: readonly NpmRegistryAuth[] | undefined;
+}
+
+/** True when the container bootstrap installs project dependencies. */
+export function installsDependencies(
+  environment: EnvironmentAdapter | undefined,
+  options: Pick<SandboxOptions, 'install' | 'network'>,
+): boolean {
+  return environment != null && options.install && options.network !== 'none';
 }
 
 /**
@@ -71,9 +82,16 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
     env['SANDBOX_LOGIN_CMD'] = agent.auth.loginCommand;
   }
 
-  if (environment != null && options.install && !offline) {
+  if (environment != null && installsDependencies(environment, options)) {
     env['SANDBOX_ENV_LABEL'] = environment.label;
     env['SANDBOX_DEPS_INSTALL'] = environment.installCommand;
+
+    // Names only: the values reach the container through `hostEnv`.
+    if (inputs.npmAuth != null && inputs.npmAuth.length > 0) {
+      env['SANDBOX_NPM_AUTH'] = inputs.npmAuth
+        .map(({ host, envVar }) => `${host}=${envVar}`)
+        .join('\n');
+    }
   }
 
   if (options.gitMount) {

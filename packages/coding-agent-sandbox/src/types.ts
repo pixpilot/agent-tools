@@ -140,6 +140,18 @@ export interface SandboxOptions {
   /** Extra hosts allowed in `strict`, on top of the resolved allowlist. */
   allowHosts?: readonly string[] | undefined;
   /**
+   * Registry tokens for dependency installation, as `<host>=<ENV_VAR>`. The
+   * variable is read from the host environment, visible to the install step
+   * only, and unset before the agent starts.
+   */
+  npmAuth?: readonly string[] | undefined;
+  /**
+   * Adds `npmAuth` entries for the project's registries from the `${VAR}` auth
+   * lines in the project and host user npmrc files. Off by default, because it
+   * hands a session tokens nobody named for it.
+   */
+  autoNpmAuth?: boolean | undefined;
+  /**
    * Let the selected agent reach its vendor's hosted MCP connector gateway.
    * Off in every network mode, including `open`: the gateway carries an
    * account's connected services into the sandbox, which a coding session does
@@ -183,6 +195,11 @@ export interface SessionPlan {
   configsPath: string;
   volumes: VolumeMount[];
   env: Record<string, string>;
+  /**
+   * Variables Docker copies from the host environment by name, so their values
+   * never appear in `docker run` arguments.
+   */
+  hostEnv?: readonly string[] | undefined;
   /** Allocate a TTY; false when stdin is not a terminal. */
   tty: boolean;
   network: NetworkMode;

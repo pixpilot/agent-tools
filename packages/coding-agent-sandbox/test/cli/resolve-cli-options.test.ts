@@ -26,9 +26,17 @@ describe('resolveCliOptions', () => {
       dryRun: false,
       allowDirty: false,
       allowProviderMcp: false,
+      autoNpmAuth: false,
       network: 'strict',
       yes: false,
     });
+  });
+
+  it('should keep npmrc token discovery off unless it was asked for', () => {
+    expect(resolveCliOptions({ task: 'fix login' }).autoNpmAuth).toBe(false);
+    expect(resolveCliOptions({ task: 'fix login', autoNpmAuth: true }).autoNpmAuth).toBe(
+      true,
+    );
   });
 
   it('should keep the provider MCP gateway off unless it was asked for', () => {

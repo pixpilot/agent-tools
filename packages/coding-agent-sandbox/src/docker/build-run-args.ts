@@ -86,6 +86,18 @@ export function buildRunArgs(plan: SessionPlan): string[] {
     args.push('-e', `${key}=${value}`);
   }
 
+  for (const name of plan.hostEnv ?? []) {
+    if (Object.hasOwn(plan.env, name)) {
+      throw new Error(
+        `${name} is set by the sandbox and cannot also be forwarded from the host.`,
+      );
+    }
+
+    // Name only: Docker reads the value from its own environment, which keeps
+    // secrets out of process listings and the dry-run plan.
+    args.push('-e', name);
+  }
+
   args.push(plan.image);
   return args;
 }

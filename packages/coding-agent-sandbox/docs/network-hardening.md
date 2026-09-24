@@ -230,6 +230,9 @@ In `strict`:
 allowed = bootstrap hosts
         + AgentAdapter.egressHosts        (the selected agent's provider)
         + EnvironmentAdapter.egressHosts  (the detected project environment)
+        + EnvironmentAdapter.projectEgressHosts(main checkout)
+                                          (e.g. registries in .npmrc)
+        + --npm-auth registry hosts       (plus their download hosts)
         + the repository's own HTTPS Git remote hosts
         + --allow-hosts                   (per session, never persisted)
 ```
