@@ -1,5 +1,12 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.18.0
+
+### Minor Changes
+
+- enhance release notification with outputs and messaging
+- add initial test instructions
+
 ## 1.17.0
 
 ### Minor Changes
