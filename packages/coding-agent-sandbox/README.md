@@ -462,7 +462,9 @@ Keeping `node_modules` in a named volume means Windows never sees a Linux depend
 
 A worktree's `.git` file points at a host path that does not exist in the container. For each session, the CLI creates a private no-hardlink clone, mounts it at `/repo/.git`, and replaces the worktree pointer with a read-only `gitdir: /repo/.git` file. Commits, diffs, branches and history therefore work in `/workspace` without exposing the host repository's objects, refs, hooks or config.
 
-When the session ends, the CLI imports only commits that fast-forward from the recorded base into that worktree's branch. The host branch must still point at that base, and host hooks are disabled during the index refresh. If either condition fails, the private clone is retained for recovery and the host repository is left untouched. Use `--no-git-mount` to disable Git entirely inside the container.
+When the session ends, the CLI imports only commits that fast-forward from the recorded base into that worktree's branch. The host branch must still point at that base, and host hooks are disabled during the index refresh. If either condition fails, the private clone is retained for recovery and the host branch is left untouched. Use `--no-git-mount` to disable Git entirely inside the container.
+
+Any other ref the agent creates or moves — a merge into its private `main`, a stash, a new branch or tag, a detached HEAD — is never merged, but is copied to `refs/coding-agent-sandbox/preserved/<branch>/<id>/…` on the host and listed on exit. Inspect with `git log <ref>`; list them all with `git for-each-ref refs/coding-agent-sandbox/preserved`. The private clone is marked for recovery before the agent starts, so a crashed or killed session keeps it instead of letting the next run sweep it away.
 
 Commit identity is passed as `GIT_AUTHOR_*`/`GIT_COMMITTER_*` environment variables read from the host repository config, so no host config file is mounted.
 

@@ -22,6 +22,10 @@ jobs:
       contents: write
       pull-requests: write
       id-token: write
+    outputs:
+      published: ${{ steps.release.outputs.published }}
+      published-versions: ${{ steps.release.outputs.published-versions }}
+      release-summary: ${{ steps.release.outputs.release-summary }}
 
     steps:
       - name: Generate bot app token
@@ -44,6 +48,7 @@ jobs:
           build: 'false'
 
       - name: Release
+        id: release
         uses: pixpilot/changesets-autopilot@v1
         with:
           GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
@@ -61,5 +66,9 @@ jobs:
         with:
           status: ${{ contains(needs.*.result, 'failure') && 'failure' || contains(needs.*.result, 'cancelled') && 'cancelled' || 'success' }}
           notify-on: any
+          # Names the released versions; an empty title falls back to the generated one.
+          title: ${{ needs.release.outputs.published == 'true' && format('Released {0} ({1})', needs.release.outputs.published-versions, github.repository) || '' }}
+          # Published packages, why nothing was published, or why the release failed.
+          message: ${{ needs.release.outputs.release-summary }}
           telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           telegram-chat-id: ${{ secrets.TELEGRAM_CHAT_ID }}

@@ -9,6 +9,8 @@ import {
   removeTempDirectory,
 } from '../utils/temp-directories';
 
+const PRESERVED_REF_PREFIX = 'refs/coding-agent-sandbox/preserved';
+
 /** Private Git metadata and its container-facing pointer for one session. */
 export interface SandboxGit {
   root: string;
@@ -17,6 +19,8 @@ export interface SandboxGit {
   hooksPath: string;
   branch: string;
   baseCommit: string;
+  /** Private refs at session start, so refs the agent moved can be preserved. */
+  initialRefs: Map<string, string>;
 }
 
 /** Creates an isolated clone so an agent never receives the host repository's `.git`. */
@@ -51,12 +55,17 @@ export function prepareSandboxGit(
       mode: 0o600,
     });
 
+    // Marked for recovery from the start: a hard-killed session must not have
+    // its unimported commits removed by the next run's stale-directory sweep.
+    keepTempDirectory(root);
+
     return {
       root,
       gitDir,
       pointerPath,
       hooksPath,
       branch: worktree.branch,
+      initialRefs: listRefs(gitDir),
       baseCommit: runOrThrow('git', [
         '-C',
         repository.root,
@@ -68,6 +77,47 @@ export function prepareSandboxGit(
     removeTempDirectory(root);
     throw cause;
   }
+}
+
+/**
+ * Copies every private ref the agent created or moved, other than the session
+ * branch, into a host-only namespace. Covers merges into a private `main`,
+ * stashes, new branches and tags, and a detached HEAD. Returns the host refs.
+ */
+export function preserveSandboxRefs(
+  sandboxGit: SandboxGit,
+  repository: RepositoryInfo,
+): string[] {
+  const sessionRef = `refs/heads/${sandboxGit.branch}`;
+  const namespace = `${PRESERVED_REF_PREFIX}/${sandboxGit.branch}/${shortHash(sandboxGit.root)}`;
+  const refspecs: string[] = [];
+  const preserved: string[] = [];
+
+  for (const [ref, commit] of listRefs(sandboxGit.gitDir)) {
+    if (ref !== sessionRef && sandboxGit.initialRefs.get(ref) !== commit) {
+      const target = `${namespace}/${ref.replace(/^refs\//u, '')}`;
+      refspecs.push(`+${ref}:${target}`);
+      preserved.push(target);
+    }
+  }
+
+  if (refspecs.length === 0) {
+    return [];
+  }
+
+  runOrThrow('git', [
+    '-C',
+    repository.root,
+    '-c',
+    'protocol.file.allow=always',
+    'fetch',
+    '--no-tags',
+    '--no-write-fetch-head',
+    sandboxGit.gitDir,
+    ...refspecs,
+  ]);
+
+  return preserved;
 }
 
 /** Imports only descendant commits into the intended branch, with host hooks disabled. */
@@ -159,9 +209,34 @@ export function removeSandboxGit(sandboxGit: SandboxGit): void {
   removeTempDirectory(sandboxGit.root);
 }
 
-/** Keeps unimported session Git data on disk so its commits can be recovered. */
-export function keepSandboxGit(sandboxGit: SandboxGit): void {
-  keepTempDirectory(sandboxGit.root);
+/** Every ref plus a detached HEAD, which only the reflog would otherwise hold. */
+function listRefs(gitDirectory: string): Map<string, string> {
+  const refs = new Map<string, string>();
+  const output = runOrThrow('git', [
+    '--git-dir',
+    gitDirectory,
+    'for-each-ref',
+    '--format=%(objectname) %(refname)',
+  ]);
+
+  for (const line of output.split('\n')) {
+    const [commit, ref] = line.split(' ');
+    if (commit != null && ref != null) refs.set(ref, commit);
+  }
+
+  const symbolic = runCapture('git', [
+    '--git-dir',
+    gitDirectory,
+    'symbolic-ref',
+    '-q',
+    'HEAD',
+  ]);
+
+  if (symbolic.status !== 0) {
+    refs.set('HEAD', runOrThrow('git', ['--git-dir', gitDirectory, 'rev-parse', 'HEAD']));
+  }
+
+  return refs;
 }
 
 function isAncestor(gitDirectory: string, base: string, candidate: string): boolean {

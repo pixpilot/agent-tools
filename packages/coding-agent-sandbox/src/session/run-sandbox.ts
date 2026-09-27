@@ -30,8 +30,8 @@ import { ensureWorktree } from '../git/ensure-worktree';
 import { getRemoteHosts } from '../git/get-remote-hosts';
 import {
   importSandboxGit,
-  keepSandboxGit,
   prepareSandboxGit,
+  preserveSandboxRefs,
   removeSandboxGit,
 } from '../git/prepare-sandbox-git';
 import { previewWorktree } from '../git/preview-worktree';
@@ -265,7 +265,6 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
 
     let exitCode = 1;
     let proxyHosts: ProxyAudit = { reached: [], blocked: [] };
-    let preserveSandboxGit = false;
     try {
       if (proxied) {
         ensureSessionNetwork({
@@ -282,25 +281,33 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
       exitCode = await runContainer(sessionPlan);
     } finally {
       if (sandboxGit != null) {
+        // The private clone is already marked for recovery; it is removed only
+        // once every ref the agent moved is safely on the host.
         try {
+          const preserved = preserveSandboxRefs(sandboxGit, repository);
+          if (preserved.length > 0) {
+            warn(
+              `The agent changed Git refs outside ${worktree.branch}. Nothing was merged; they were saved on the host (inspect with \`git log <ref>\`):`,
+            );
+            for (const ref of preserved) {
+              detail(ref);
+            }
+          }
+
           const imported = importSandboxGit(sandboxGit, repository, worktree);
           if (imported != null) {
             detail(
               `Imported sandbox commit ${imported.slice(0, SHORT_COMMIT_LENGTH)} into ${worktree.branch}.`,
             );
           }
+
+          removeSandboxGit(sandboxGit);
         } catch (cause) {
-          preserveSandboxGit = true;
-          keepSandboxGit(sandboxGit);
           warn(
             `Could not import sandbox commits safely: ${
               cause instanceof Error ? cause.message : String(cause)
             }. Private Git data was kept at ${sandboxGit.root} for recovery.`,
           );
-        } finally {
-          if (!preserveSandboxGit) {
-            removeSandboxGit(sandboxGit);
-          }
         }
       }
 
