@@ -22,11 +22,7 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 /** Runs Git the way the agent does inside the container: private dir, shared worktree. */
-function agentGit(
-  sandboxGit: SandboxGit,
-  workTree: string,
-  ...args: string[]
-): string {
+function agentGit(sandboxGit: SandboxGit, workTree: string, ...args: string[]): string {
   return git(
     workTree,
     '--git-dir',
@@ -222,13 +218,24 @@ describe('prepareSandboxGit', () => {
       agentGit(sandboxGit, worktree.path, 'add', '-A');
       agentGit(sandboxGit, worktree.path, 'commit', '-qm', 'feat: agent change');
       agentGit(sandboxGit, worktree.path, 'checkout', '-q', 'main');
-      agentGit(sandboxGit, worktree.path, 'merge', '-q', '--no-ff', '-m', 'merge', worktree.branch);
+      agentGit(
+        sandboxGit,
+        worktree.path,
+        'merge',
+        '-q',
+        '--no-ff',
+        '-m',
+        'merge',
+        worktree.branch,
+      );
       const privateMain = agentGit(sandboxGit, worktree.path, 'rev-parse', 'main');
 
       const preserved = preserveSandboxRefs(sandboxGit, repository);
 
       expect(preserved).toHaveLength(1);
-      expect(preserved[0]).toMatch(/^refs\/coding-agent-sandbox\/preserved\/.+\/heads\/main$/u);
+      expect(preserved[0]).toMatch(
+        /^refs\/coding-agent-sandbox\/preserved\/.+\/heads\/main$/u,
+      );
       expect(git(repository.root, 'rev-parse', preserved[0]!)).toBe(privateMain);
       expect(git(repository.root, 'rev-parse', 'main')).toBe(hostMain);
     } finally {
