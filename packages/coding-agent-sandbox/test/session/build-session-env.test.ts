@@ -59,6 +59,16 @@ function build(overrides: Partial<SandboxOptions> = {}, agentId = 'claude') {
 }
 
 describe('buildSessionEnv', () => {
+  it.each(['claude', 'codex', 'copilot'])(
+    'should pass the update choice to the %s bootstrap without skipping installation',
+    (agentId) => {
+      expect(build({ updateAgent: true }, agentId)['SANDBOX_AGENT_UPDATE']).toBe('1');
+      const env = build({ updateAgent: false }, agentId);
+      expect(env['SANDBOX_AGENT_UPDATE']).toBe('0');
+      expect(env['SANDBOX_AGENT_INSTALL']).toBe(getAgent(agentId).installCommand);
+    },
+  );
+
   // Written in both states: omitting it would hand the decision back to the
   // agent's own default, which enables the gateway for claude.ai accounts.
   it('should switch the provider MCP gateway off by default', () => {
@@ -76,8 +86,9 @@ describe('buildSessionEnv', () => {
   });
 
   it('should disable configuration and dependency installation offline', () => {
-    const env = build({ network: 'none' });
+    const env = build({ network: 'none', updateAgent: true });
     expect(env['SANDBOX_OFFLINE']).toBe('1');
+    expect(env['SANDBOX_AGENT_UPDATE']).toBe('0');
     expect(env['SANDBOX_CONFIGS_ENABLED']).toBe('0');
     expect(env['SANDBOX_DEPS_INSTALL']).toBeUndefined();
   });

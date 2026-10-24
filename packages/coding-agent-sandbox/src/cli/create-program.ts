@@ -85,7 +85,12 @@ export function createProgram(version: string): Command {
     .option('--offline', 'Deprecated alias for --network none')
     .option('--no-configs', 'Skip skills, prompts, MCP and global-rules provisioning')
     .option('--no-git-mount', 'Disable isolated Git support inside the container')
-    .option('--update-agent', 'Reinstall/upgrade the agent CLI in the container')
+    .option(
+      '--update-agent <boolean>',
+      'Update the agent CLI to latest before launch (skipped offline)',
+      parseBoolean,
+      true,
+    )
     .option('--rebuild-image', 'Rebuild the shared development image')
     .option('--login', 'Force the agent login flow before launching')
     .option('--dry-run', 'Print the docker run command without starting anything')

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createProgram } from '../../src/cli/create-program';
 import { detectDefaultRepo } from '../../src/cli/detect-default-repo';
 import { resolveCliOptions } from '../../src/cli/resolve-cli-options';
 
@@ -20,7 +21,7 @@ describe('resolveCliOptions', () => {
       install: true,
       configs: true,
       gitMount: true,
-      updateAgent: false,
+      updateAgent: true,
       rebuildImage: false,
       login: false,
       dryRun: false,
@@ -30,6 +31,31 @@ describe('resolveCliOptions', () => {
       network: 'strict',
       yes: false,
     });
+  });
+
+  it.each([
+    { argv: [], updateAgent: true },
+    { argv: ['--network', 'open'], updateAgent: true },
+    { argv: ['--network', 'none'], updateAgent: false },
+    { argv: ['--offline'], updateAgent: false },
+    { argv: ['--update-agent', 'false'], updateAgent: false },
+    { argv: ['--network', 'open', '--update-agent', 'false'], updateAgent: false },
+    { argv: ['--update-agent', 'true'], updateAgent: true },
+    { argv: ['--network', 'none', '--update-agent', 'true'], updateAgent: false },
+  ])(
+    'should resolve agent updates for $argv to $updateAgent',
+    ({ argv, updateAgent }) => {
+      const program = createProgram('0.0.0');
+      program.parse(['--task', 'fix login', ...argv], { from: 'user' });
+
+      expect(resolveCliOptions(program.opts()).updateAgent).toBe(updateAgent);
+    },
+  );
+
+  it('should preserve an explicit update opt-out from programmatic callers', () => {
+    expect(resolveCliOptions({ task: 'fix login', updateAgent: false }).updateAgent).toBe(
+      false,
+    );
   });
 
   it('should keep npmrc token discovery off unless it was asked for', () => {

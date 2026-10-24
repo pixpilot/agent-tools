@@ -52,7 +52,7 @@ export function buildSessionEnv(inputs: SessionEnvInputs): Record<string, string
     SANDBOX_AGENT_LABEL: agent.label,
     SANDBOX_AGENT_BIN: agent.binary,
     SANDBOX_AGENT_INSTALL: agent.installCommand,
-    SANDBOX_AGENT_UPDATE: options.updateAgent ? '1' : '0',
+    SANDBOX_AGENT_UPDATE: !offline && options.updateAgent ? '1' : '0',
     SANDBOX_AGENT_CMD: agent.launchCommand({
       allowProviderMcp: options.allowProviderMcp,
       fullAccess: options.fullAccess,

@@ -18,6 +18,8 @@ describe('hasExplicitOptions', () => {
     expect(options).toContain('--prompt');
     expect(options).toContain('--prompt-file');
     expect(options).toContain('--configs-dir');
+    expect(options).toContain('--update-agent');
+    expect(options).not.toContain('--no-update-agent');
     expect(options).not.toContain('--skills-dir');
     expect(createProgram('0.0.0').helpInformation()).toContain(
       'Read the initial prompt from a UTF-8 file',
@@ -57,5 +59,12 @@ describe('hasExplicitOptions', () => {
       configsDir: '/configs',
       gitMount: false,
     });
+  });
+
+  it('should preserve the update opt-out for the guided setup', () => {
+    const program = createProgram('0.0.0');
+    program.parse(['--update-agent', 'false'], { from: 'user' });
+
+    expect(getExplicitOptions(program)).toStrictEqual({ updateAgent: false });
   });
 });

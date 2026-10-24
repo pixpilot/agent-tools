@@ -32,6 +32,7 @@ export function resolveCliOptions(raw: RawCliOptions): SandboxOptions {
   }
 
   const repo = raw.repo?.trim();
+  const network = resolveNetworkMode(raw);
 
   return {
     ...rest,
@@ -43,14 +44,14 @@ export function resolveCliOptions(raw: RawCliOptions): SandboxOptions {
     install: raw.install ?? true,
     configs: raw.configs ?? true,
     gitMount: raw.gitMount ?? true,
-    updateAgent: raw.updateAgent ?? false,
+    updateAgent: network !== 'none' && (raw.updateAgent ?? true),
     rebuildImage: raw.rebuildImage ?? false,
     login: raw.login ?? false,
     dryRun: raw.dryRun ?? false,
     allowDirty: raw.allowDirty ?? false,
     allowProviderMcp: raw.allowProviderMcp ?? false,
     autoNpmAuth: raw.autoNpmAuth ?? false,
-    network: resolveNetworkMode(raw),
+    network,
     yes: raw.yes ?? false,
   };
 }

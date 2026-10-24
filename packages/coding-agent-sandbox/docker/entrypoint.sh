@@ -72,10 +72,10 @@ if [ "${SANDBOX_OFFLINE:-0}" = "1" ]; then
     || die "Offline mode requires an installed $AGENT_LABEL CLI; run online first"
 elif [ -n "${SANDBOX_AGENT_INSTALL:-}" ]; then
   if [ "${SANDBOX_AGENT_UPDATE:-0}" = "1" ] || ! command -v "${SANDBOX_AGENT_BIN:-}" >/dev/null 2>&1; then
-    step "Installing $AGENT_LABEL"
+    step "Installing latest $AGENT_LABEL"
     eval "$SANDBOX_AGENT_INSTALL" || die "Failed to install the $AGENT_LABEL CLI"
   else
-    note "$AGENT_LABEL already installed (pass --update-agent to upgrade)"
+    note "$AGENT_LABEL already installed (automatic updates disabled)"
   fi
 fi
 

@@ -61,10 +61,8 @@ export async function runSandbox(options: SandboxOptions): Promise<number> {
   const agent = getAgent(options.agent);
   const offline = options.network === 'none';
 
-  if (offline && (options.login || options.updateAgent || options.rebuildImage)) {
-    throw new Error(
-      '--network none cannot be combined with --login, --update-agent or --rebuild-image.',
-    );
+  if (offline && (options.login || options.rebuildImage)) {
+    throw new Error('--network none cannot be combined with --login or --rebuild-image.');
   }
 
   // A provider gateway is a remote service, so the flag cannot mean anything

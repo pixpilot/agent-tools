@@ -131,6 +131,7 @@ export interface SandboxOptions {
   install: boolean;
   configs: boolean;
   gitMount: boolean;
+  /** Update the selected CLI before launch; defaults to true in the CLI, ignored offline. */
   updateAgent: boolean;
   rebuildImage: boolean;
   login: boolean;

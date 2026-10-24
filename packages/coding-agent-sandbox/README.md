@@ -84,7 +84,7 @@ portable configs directory                                  -> /coding-agent-san
 | `--no-install`             | Skip project dependency installation                                                                      |
 | `--no-configs`             | Skip skills, prompts, MCP and global-rules provisioning                                                   |
 | `--no-git-mount`           | Disable isolated Git support (Git stops working in-container)                                             |
-| `--update-agent`           | Reinstall/upgrade the agent CLI in the container                                                          |
+| `--update-agent <boolean>` | Update the selected agent CLI to latest before launch (default `true`); set `false` to reuse it           |
 | `--rebuild-image`          | Rebuild the shared development image                                                                      |
 | `--login`                  | Force the agent login flow before launching                                                               |
 | `--dry-run`                | Preview Docker arguments with environment values omitted                                                  |
@@ -414,8 +414,8 @@ trust the operation, then read the printed hostnames to decide what to allow.
 `--network none` also runs with `--pull never` and skips configuration
 sync, dependency installs, CLI installs/updates and
 authentication. A local image and installed CLI are required; prepare them with a
-network first, or select a cached `--image`. It rejects `--login`,
-`--update-agent` and `--rebuild-image`. Cloud-backed agents cannot make model
+network first, or select a cached `--image`. It rejects `--login`
+and `--rebuild-image`. Cloud-backed agents cannot make model
 requests without a network. Existing mounted state remains available and writable.
 
 Containers run with `--cap-drop=ALL`, `--security-opt=no-new-privileges` and a
@@ -444,7 +444,9 @@ After every session, the CLI removes all unused labeled dependency volumes, incl
 
 One shared image for every agent and every project type: Node.js 24.15 (Debian slim), Git, Python 3, ripgrep, jq and common shell utilities, plus `@antfu/ni` and corepack. It runs as the unprivileged `node` user and is built from the bundled `docker/` context on first use, then cached; the tag is derived from the build context so edits trigger a rebuild.
 
-Agent CLIs are installed at session start into a shared `coding-agent-sandbox-npm-global` volume rather than baked into the image, so there is no per-agent image and no reinstall on every run.
+Every online session installs or updates the selected agent CLI to its npm `latest` release before launch. Installed CLIs persist in the shared `coding-agent-sandbox-npm-global` volume rather than being baked into the image; rebuilding the image does not upgrade them.
+
+Pass `--update-agent false` to reuse the installed version (a missing CLI is still installed). Updates require registry access, add startup time, and stop the session if installation fails. `--network none` and `--offline` skip updates automatically and require an installed CLI.
 
 ### Volumes
 
@@ -537,7 +539,7 @@ const exitCode = await runSandbox({
   install: true,
   configs: true,
   gitMount: true,
-  updateAgent: false,
+  updateAgent: true,
   rebuildImage: false,
   login: false,
   dryRun: false,
