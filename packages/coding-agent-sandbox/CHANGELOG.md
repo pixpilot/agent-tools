@@ -1,5 +1,11 @@
 # @pixpilot/coding-agent-sandbox
 
+## 1.19.0
+
+### Minor Changes
+
+- enhance `--update-agent` option for agent CLI updates
+
 ## 1.18.0
 
 ### Minor Changes
